@@ -7,6 +7,7 @@ import { Reveal } from '@/components/reveal'
 import { Typewriter } from '@/components/typewriter'
 import { profile } from '@/lib/portfolio-data'
 import { smoothScrollTo } from '@/lib/smooth-scroll'
+import { GitHubHeatmap } from '@/components/github-heatmap'
 
 export function Hero() {
   const nameTitles = [profile.name, 'CS Student']
@@ -153,6 +154,9 @@ export function Hero() {
             </div>
           </Reveal>
         )}
+        <Reveal delay={650} className="mt-6 w-full">
+          <GitHubHeatmap username="Jehooooo" />
+        </Reveal>
       </div>
     </section>
   )
