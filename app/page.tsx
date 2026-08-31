@@ -10,7 +10,7 @@ import { AiChat } from '@/components/ai-chat'
 
 export default function Page() {
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen w-full max-w-full overflow-x-hidden">
       <div className="page-glow" aria-hidden="true" />
       <SiteNav />
       <main>

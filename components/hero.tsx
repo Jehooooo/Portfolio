@@ -49,7 +49,7 @@ export function Hero() {
       className="relative mx-auto flex min-h-svh max-w-6xl flex-col items-center justify-center gap-8 px-4 py-16 sm:px-6 sm:py-20 md:py-24 lg:flex-row lg:items-center lg:justify-between lg:gap-14"
     >
       {/* Visual / Profile Picture Column */}
-      <Reveal delay={100} className="flex justify-center lg:order-2 lg:flex-1">
+      <Reveal delay={100} className="flex w-full justify-center lg:order-2 lg:flex-1 shrink-0">
         <div className="profile-border-glow group cursor-pointer rounded-full">
           <div className="relative h-36 w-36 overflow-hidden rounded-full sm:h-48 sm:w-48 md:h-56 md:w-56 lg:h-60 lg:w-60">
             <Image
@@ -65,7 +65,7 @@ export function Hero() {
       </Reveal>
 
       {/* Copy / Main Hero Content */}
-      <div className="flex flex-1 flex-col items-center text-center lg:order-1 lg:items-start lg:text-left">
+      <div className="flex w-full min-w-0 max-w-full flex-1 flex-col items-center text-center lg:order-1 lg:items-start lg:text-left">
         <Reveal delay={250}>
           <h1 className="mt-4 text-balance font-bold tracking-tight text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl leading-[1.18]">
             Hi, I&apos;m{' '}
@@ -88,12 +88,12 @@ export function Hero() {
         </Reveal>
 
         <Reveal delay={450}>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3.5 lg:justify-start">
+          <div className="mt-6 flex w-full flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-center gap-2.5 sm:gap-3.5 lg:justify-start">
             <a
               href={profile.resumeUrl || '/documents/JehoUpdatedResume.pdf'}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-bw-primary group inline-flex items-center gap-2.5 rounded-xl px-6 py-3.5 text-sm font-semibold text-white shadow-lg"
+              className="btn-bw-primary group inline-flex items-center justify-center gap-2.5 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-lg w-full sm:w-auto"
             >
               <FileText
                 size={18}
@@ -105,7 +105,7 @@ export function Hero() {
             <a
               href="#projects"
               onClick={smoothScrollTo}
-              className="btn-bw-secondary group inline-flex items-center gap-2.5 rounded-xl px-5 py-3.5 text-sm font-medium text-foreground"
+              className="btn-bw-secondary group inline-flex items-center justify-center gap-2.5 rounded-xl px-5 py-3 text-sm font-medium text-foreground w-full sm:w-auto"
             >
               <span>View My Projects</span>
               <ArrowUpRight
@@ -117,7 +117,7 @@ export function Hero() {
             <a
               href="#contact"
               onClick={smoothScrollTo}
-              className="btn-bw-secondary group inline-flex items-center gap-2.5 rounded-xl px-5 py-3.5 text-sm font-medium text-foreground"
+              className="btn-bw-secondary group inline-flex items-center justify-center gap-2.5 rounded-xl px-5 py-3 text-sm font-medium text-foreground w-full sm:w-auto"
             >
               <Mail
                 size={18}
