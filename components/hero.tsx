@@ -8,6 +8,7 @@ import { Typewriter } from '@/components/typewriter'
 import { profile } from '@/lib/portfolio-data'
 import { smoothScrollTo } from '@/lib/smooth-scroll'
 import { GitHubHeatmap } from '@/components/github-heatmap'
+import { BatSwarm } from '@/components/bat-swarm'
 
 export function Hero() {
   const nameTitles = ['Jeho', 'CS Student']
@@ -48,20 +49,22 @@ export function Hero() {
       id="home"
       className="relative mx-auto flex min-h-svh max-w-6xl flex-col items-center justify-center gap-8 px-4 py-16 sm:px-6 sm:py-20 md:py-24 lg:flex-row lg:items-center lg:justify-between lg:gap-14"
     >
-      {/* Visual / Profile Picture Column */}
+      {/* Visual / Profile Picture Column with Batman Bat Swarm Easter Egg */}
       <Reveal delay={100} className="flex w-full justify-center lg:order-2 lg:flex-1 shrink-0">
-        <div className="profile-border-glow group cursor-pointer rounded-full">
-          <div className="relative h-36 w-36 overflow-hidden rounded-full sm:h-48 sm:w-48 md:h-56 md:w-56 lg:h-60 lg:w-60">
-            <Image
-              src={profile.avatarUrl || '/images/profile.png'}
-              alt={profile.name}
-              fill
-              sizes="(max-width: 640px) 176px, (max-width: 768px) 208px, 240px"
-              priority
-              className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
-            />
+        <BatSwarm>
+          <div className="profile-border-glow group cursor-pointer rounded-full">
+            <div className="relative h-36 w-36 overflow-hidden rounded-full sm:h-48 sm:w-48 md:h-56 md:w-56 lg:h-60 lg:w-60">
+              <Image
+                src={profile.avatarUrl || '/images/profile.png'}
+                alt={profile.name}
+                fill
+                sizes="(max-width: 640px) 176px, (max-width: 768px) 208px, 240px"
+                priority
+                className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
           </div>
-        </div>
+        </BatSwarm>
       </Reveal>
 
       {/* Copy / Main Hero Content */}

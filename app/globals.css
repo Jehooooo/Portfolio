@@ -513,3 +513,34 @@
 }
 
 
+
+
+/* Batman Bat Swarm Animations */
+@keyframes batWingFlap {
+  0% {
+    transform: scaleY(1) scaleX(1);
+  }
+  50% {
+    transform: scaleY(-0.4) scaleX(0.92);
+  }
+  100% {
+    transform: scaleY(1) scaleX(1);
+  }
+}
+
+@keyframes batFlyOut {
+  0% {
+    transform: translate(var(--start-x, 0px), var(--start-y, 0px)) scale(0.15) rotate(var(--bat-rot, 0deg));
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(var(--target-x, 0px), var(--target-y, 0px)) scale(var(--bat-scale, 1)) rotate(calc(var(--bat-rot, 0deg) + 15deg));
+    opacity: 0;
+  }
+}
