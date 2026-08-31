@@ -21,11 +21,11 @@ interface ContributionData {
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 const LEVEL_COLORS = [
-  'bg-white/6 border border-white/10',
-  'bg-white/25',
-  'bg-white/45',
-  'bg-white/70',
-  'bg-white',
+  'bg-[#ebedf0] dark:bg-[#161b22] border border-black/10 dark:border-white/8',
+  'bg-[#9be9a8] dark:bg-[#0e4429]',
+  'bg-[#40c463] dark:bg-[#006d32]',
+  'bg-[#30a14e] dark:bg-[#26a641]',
+  'bg-[#216e39] dark:bg-[#39d353]',
 ]
 
 function groupIntoWeeks(days: ContributionDay[]): ContributionWeek[] {
