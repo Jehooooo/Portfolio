@@ -51,51 +51,51 @@
 
 :root {
   color-scheme: light;
-  --background: #f8f6fc;
-  --foreground: #1a0e2e;
-  --card: rgba(255, 255, 255, 0.75);
-  --card-foreground: #1a0e2e;
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --card: rgba(255, 255, 255, 0.85);
+  --card-foreground: #0a0a0a;
   --popover: #ffffff;
-  --popover-foreground: #1a0e2e;
-  --primary: #9333ea;
+  --popover-foreground: #0a0a0a;
+  --primary: #0a0a0a;
   --primary-foreground: #ffffff;
-  --secondary: #f3e8ff;
-  --secondary-foreground: #581c87;
-  --muted: #ede5f7;
-  --muted-foreground: #6b5492;
-  --accent: #f3e8ff;
-  --accent-foreground: #1a0e2e;
-  --accent-brand: #9333ea;
+  --secondary: #f5f5f5;
+  --secondary-foreground: #0a0a0a;
+  --muted: #ebebeb;
+  --muted-foreground: #555555;
+  --accent: #f0f0f0;
+  --accent-foreground: #0a0a0a;
+  --accent-brand: #0a0a0a;
   --accent-brand-foreground: #ffffff;
   --destructive: #ef4444;
-  --border: rgba(147, 51, 234, 0.18);
-  --input: rgba(147, 51, 234, 0.15);
-  --ring: #9333ea;
+  --border: rgba(0, 0, 0, 0.15);
+  --input: rgba(0, 0, 0, 0.10);
+  --ring: #0a0a0a;
   --radius: 0.9rem;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #05030a;
-  --foreground: #f3f0f8;
-  --card: rgba(15, 8, 25, 0.75);
-  --card-foreground: #f3f0f8;
-  --popover: #0c0618;
-  --popover-foreground: #f3f0f8;
-  --primary: #c084fc;
-  --primary-foreground: #05030a;
-  --secondary: #1e0e36;
-  --secondary-foreground: #e9d5ff;
-  --muted: #180b2c;
-  --muted-foreground: #a795c6;
-  --accent: #2e1065;
-  --accent-foreground: #f3f0f8;
-  --accent-brand: #a855f7;
-  --accent-brand-foreground: #ffffff;
+  --background: #0a0a0a;
+  --foreground: #f5f5f5;
+  --card: rgba(20, 20, 20, 0.80);
+  --card-foreground: #f5f5f5;
+  --popover: #111111;
+  --popover-foreground: #f5f5f5;
+  --primary: #f5f5f5;
+  --primary-foreground: #0a0a0a;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #e5e5e5;
+  --muted: #1f1f1f;
+  --muted-foreground: #888888;
+  --accent: #1a1a1a;
+  --accent-foreground: #f5f5f5;
+  --accent-brand: #ffffff;
+  --accent-brand-foreground: #0a0a0a;
   --destructive: #ef4444;
-  --border: rgba(168, 85, 247, 0.18);
-  --input: rgba(168, 85, 247, 0.22);
-  --ring: #a855f7;
+  --border: rgba(255, 255, 255, 0.12);
+  --input: rgba(255, 255, 255, 0.10);
+  --ring: #ffffff;
 }
 
 @layer base {
@@ -122,7 +122,7 @@
     background: rgba(15, 7, 26, 0.65);
     backdrop-filter: blur(16px) saturate(160%);
     -webkit-backdrop-filter: blur(16px) saturate(160%);
-    border: 1px solid rgba(168, 85, 247, 0.2);
+    border: 1px solid rgba(255,255,255,0.14);
     transition: background 0.4s ease, border-color 0.4s ease;
   }
   
@@ -130,12 +130,12 @@
     background: linear-gradient(135deg, rgba(20, 9, 35, 0.8), rgba(12, 5, 22, 0.9));
     backdrop-filter: blur(24px) saturate(170%);
     -webkit-backdrop-filter: blur(24px) saturate(170%);
-    border: 1px solid rgba(168, 85, 247, 0.25);
+    border: 1px solid rgba(255,255,255,0.18);
     transition: background 0.4s ease, border-color 0.4s ease;
   }
 
   .text-gradient-purple-violet {
-    background: linear-gradient(135deg, #e9d5ff 0%, #c084fc 35%, #a855f7 70%, #7e22ce 100%);
+    background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 35%, #ffffff 70%, #111111 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -144,7 +144,7 @@
   .btn-purple-primary {
     background: linear-gradient(135deg, rgba(25, 10, 42, 0.95) 0%, rgba(88, 28, 135, 0.9) 60%, rgba(126, 34, 206, 0.95) 100%);
     border: 1px solid rgba(192, 132, 252, 0.35);
-    box-shadow: 0 0 15px rgba(168, 85, 247, 0.25);
+    box-shadow: 0 0 15px rgba(255,255,255,0.18);
     transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
@@ -152,7 +152,7 @@
     transform: translateY(-3px);
     background: linear-gradient(135deg, rgba(35, 12, 60, 0.98) 0%, rgba(109, 40, 217, 0.95) 60%, rgba(147, 51, 234, 1) 100%);
     border-color: rgba(216, 180, 254, 0.6);
-    box-shadow: 0 0 30px rgba(168, 85, 247, 0.55), 0 8px 25px rgba(126, 34, 206, 0.4);
+    box-shadow: 0 0 30px rgba(255,255,255,0.45), 0 8px 25px rgba(126, 34, 206, 0.4);
   }
 
   .btn-purple-secondary {
@@ -166,7 +166,7 @@
     transform: translateY(-3px);
     background: linear-gradient(135deg, rgba(22, 9, 38, 0.92) 0%, rgba(58, 18, 96, 0.85) 100%);
     border-color: rgba(192, 132, 252, 0.45);
-    box-shadow: 0 0 25px rgba(168, 85, 247, 0.4);
+    box-shadow: 0 0 25px rgba(255,255,255,0.35);
   }
 }
 
@@ -178,40 +178,40 @@
 
 :root:not(.dark) .glass-strong {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(243, 232, 255, 0.8));
-  border: 1px solid rgba(147, 51, 234, 0.18);
+  border: 1px solid rgba(255,255,255,0.12);
 }
 
 :root:not(.dark) .text-gradient-purple-violet {
-  background: linear-gradient(135deg, #7e22ce 0%, #9333ea 35%, #a855f7 70%, #581c87 100%);
+  background: linear-gradient(135deg, #111111 0%, #ffffff 35%, #ffffff 70%, #0a0a0a 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 :root:not(.dark) .btn-purple-primary {
-  background: linear-gradient(135deg, #9333ea 0%, #7e22ce 60%, #6b21a8 100%);
-  border: 1px solid rgba(147, 51, 234, 0.4);
-  box-shadow: 0 4px 14px rgba(147, 51, 234, 0.2);
+  background: #0a0a0a;
+  border: 1px solid rgba(255,255,255,0.30);
+  box-shadow: 0 4px 14px rgba(255,255,255,0.14);
   color: #ffffff;
 }
 
 :root:not(.dark) .btn-purple-primary:hover {
-  background: linear-gradient(135deg, #a855f7 0%, #9333ea 60%, #7e22ce 100%);
-  border-color: rgba(168, 85, 247, 0.6);
-  box-shadow: 0 6px 20px rgba(147, 51, 234, 0.35);
+  background: #1a1a1a;
+  border-color: rgba(255,255,255,0.55);
+  box-shadow: 0 6px 20px rgba(255,255,255,0.25);
 }
 
 :root:not(.dark) .btn-purple-secondary {
   background: rgba(243, 232, 255, 0.8);
-  border: 1px solid rgba(147, 51, 234, 0.2);
+  border: 1px solid rgba(255,255,255,0.14);
   box-shadow: 0 2px 8px rgba(147, 51, 234, 0.08);
-  color: #581c87;
+  color: #0a0a0a;
 }
 
 :root:not(.dark) .btn-purple-secondary:hover {
   background: rgba(233, 213, 255, 0.9);
-  border-color: rgba(147, 51, 234, 0.35);
-  box-shadow: 0 4px 16px rgba(147, 51, 234, 0.18);
+  border-color: rgba(255,255,255,0.25);
+  box-shadow: 0 4px 16px rgba(255,255,255,0.12);
 }
 
 /* Ambient background glow â€” subtle purple gradients for depth without busyness */
@@ -221,17 +221,17 @@
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(750px circle at 50% 12%, rgba(147, 51, 234, 0.16), transparent 65%),
-    radial-gradient(600px circle at 15% 45%, rgba(126, 34, 206, 0.09), transparent 60%),
-    radial-gradient(700px circle at 85% 70%, rgba(88, 28, 135, 0.11), transparent 65%);
+    radial-gradient(750px circle at 50% 12%, rgba(255,255,255,0.04), transparent 65%),
+    radial-gradient(600px circle at 15% 45%, rgba(255,255,255,0.03), transparent 60%),
+    radial-gradient(700px circle at 85% 70%, rgba(255,255,255,0.03), transparent 65%);
   transition: background 0.4s ease;
 }
 
 :root:not(.dark) .page-glow {
   background:
-    radial-gradient(750px circle at 50% 12%, rgba(147, 51, 234, 0.06), transparent 65%),
+    radial-gradient(750px circle at 50% 12%, rgba(255,255,255,0.02), transparent 65%),
     radial-gradient(600px circle at 15% 45%, rgba(126, 34, 206, 0.04), transparent 60%),
-    radial-gradient(700px circle at 85% 70%, rgba(88, 28, 135, 0.05), transparent 65%);
+    radial-gradient(700px circle at 85% 70%, rgba(255,255,255,0.01), transparent 65%);
 }
 
 /* Profile Picture Glow & Hover Container */
@@ -239,22 +239,22 @@
   position: relative;
   padding: 3px;
   border-radius: 9999px;
-  background: linear-gradient(135deg, #e9d5ff 0%, #c084fc 35%, #9333ea 70%, #581c87 100%);
-  box-shadow: 0 0 28px rgba(168, 85, 247, 0.35), inset 0 0 15px rgba(147, 51, 234, 0.2);
+  background: linear-gradient(135deg, #ffffff 0%, #aaaaaa 50%, #333333 100%);
+  box-shadow: 0 0 28px rgba(255,255,255,0.25), inset 0 0 15px rgba(255,255,255,0.14);
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
 }
 
 .profile-border-glow:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 45px rgba(168, 85, 247, 0.6), inset 0 0 20px rgba(192, 132, 252, 0.4);
+  box-shadow: 0 0 45px rgba(255,255,255,0.55), inset 0 0 20px rgba(255,255,255,0.35);
 }
 
 :root:not(.dark) .profile-border-glow {
-  box-shadow: 0 4px 20px rgba(147, 51, 234, 0.2), inset 0 0 10px rgba(147, 51, 234, 0.1);
+  box-shadow: 0 4px 20px rgba(255,255,255,0.14), inset 0 0 10px rgba(147, 51, 234, 0.1);
 }
 
 :root:not(.dark) .profile-border-glow:hover {
-  box-shadow: 0 6px 30px rgba(147, 51, 234, 0.35), inset 0 0 15px rgba(168, 85, 247, 0.2);
+  box-shadow: 0 6px 30px rgba(255,255,255,0.25), inset 0 0 15px rgba(255,255,255,0.14);
 }
 
 /* Typewriter Cursor animation */
@@ -268,7 +268,7 @@
   margin-left: 2px;
   width: 3px;
   height: 1em;
-  background-color: #c084fc;
+  background-color: #ffffff;
   vertical-align: middle;
   animation: cursorBlink 0.8s infinite;
 }
@@ -343,27 +343,27 @@
 
 /* FAB button glow */
 .chat-fab-glow {
-  background: linear-gradient(135deg, #7e22ce 0%, #9333ea 50%, #a855f7 100%);
-  box-shadow: 0 0 20px rgba(168, 85, 247, 0.4), 0 4px 15px rgba(126, 34, 206, 0.3);
+  background: #0a0a0a;
+  box-shadow: 0 0 20px rgba(255,255,255,0.35), 0 4px 15px rgba(255,255,255,0.20);
   animation: fabPulse 3s ease-in-out infinite;
 }
 
 .chat-fab-glow:hover {
   transform: scale(1.1);
-  box-shadow: 0 0 35px rgba(168, 85, 247, 0.6), 0 6px 20px rgba(126, 34, 206, 0.5);
+  box-shadow: 0 0 35px rgba(255,255,255,0.55), 0 6px 20px rgba(255,255,255,0.40);
 }
 
 @keyframes fabPulse {
-  0%, 100% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.4), 0 4px 15px rgba(126, 34, 206, 0.3); }
-  50% { box-shadow: 0 0 30px rgba(168, 85, 247, 0.55), 0 4px 20px rgba(126, 34, 206, 0.4); }
+  0%, 100% { box-shadow: 0 0 20px rgba(255,255,255,0.35), 0 4px 15px rgba(255,255,255,0.20); }
+  50% { box-shadow: 0 0 30px rgba(255,255,255,0.45), 0 4px 20px rgba(126, 34, 206, 0.4); }
 }
 
 /* Chat panel */
 .chat-panel {
-  background: linear-gradient(180deg, rgba(12, 6, 24, 0.97) 0%, rgba(8, 4, 16, 0.98) 100%);
+  background: rgba(10,10,10,0.97);
   backdrop-filter: blur(28px) saturate(170%);
   -webkit-backdrop-filter: blur(28px) saturate(170%);
-  border: 1px solid rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(255,255,255,0.14);
   animation: chatSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -380,22 +380,22 @@
 
 /* Chat header */
 .chat-header {
-  background: linear-gradient(135deg, rgba(88, 28, 135, 0.3) 0%, rgba(126, 34, 206, 0.15) 100%);
-  border-bottom: 1px solid rgba(168, 85, 247, 0.15);
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.10);
 }
 
 /* Message bubbles */
 .chat-bubble-user {
-  background: linear-gradient(135deg, rgba(126, 34, 206, 0.7) 0%, rgba(88, 28, 135, 0.8) 100%);
-  color: #f3f0f8;
-  border: 1px solid rgba(192, 132, 252, 0.2);
+  background: rgba(255,255,255,0.12);
+  color: #f5f5f5;
+  border: 1px solid rgba(255,255,255,0.14);
   border-bottom-right-radius: 6px;
 }
 
 .chat-bubble-assistant {
   background: rgba(255, 255, 255, 0.06);
-  color: #e2d8f0;
-  border: 1px solid rgba(168, 85, 247, 0.12);
+  color: #e5e5e5;
+  border: 1px solid rgba(255,255,255,0.08);
   border-bottom-left-radius: 6px;
 }
 
@@ -412,7 +412,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background-color: rgba(192, 132, 252, 0.6);
+  background-color: rgba(255,255,255,0.55);
   animation: typingDot 1.4s ease-in-out infinite;
 }
 
@@ -431,44 +431,44 @@
 
 /* Starter prompt buttons */
 .chat-starter-btn {
-  background: rgba(168, 85, 247, 0.1);
-  border: 1px solid rgba(168, 85, 247, 0.2);
-  color: #c084fc;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: #ffffff;
 }
 
 .chat-starter-btn:hover {
-  background: rgba(168, 85, 247, 0.2);
-  border-color: rgba(192, 132, 252, 0.4);
-  color: #e9d5ff;
-  box-shadow: 0 0 12px rgba(168, 85, 247, 0.2);
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.35);
+  color: #f5f5f5;
+  box-shadow: 0 0 12px rgba(255,255,255,0.14);
 }
 
 /* Chat input */
 .chat-textarea {
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(168, 85, 247, 0.15);
-  color: #f3f0f8;
+  border: 1px solid rgba(255,255,255,0.10);
+  color: #f5f5f5;
   transition: border-color 0.2s ease;
 }
 
 .chat-textarea:focus {
-  border-color: rgba(168, 85, 247, 0.4);
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.15);
+  border-color: rgba(255,255,255,0.35);
+  box-shadow: 0 0 10px rgba(255,255,255,0.10);
 }
 
 .chat-input-area {
-  border-top: 1px solid rgba(168, 85, 247, 0.12);
+  border-top: 1px solid rgba(255,255,255,0.08);
 }
 
 /* Send button */
 .chat-send-btn {
-  background: linear-gradient(135deg, #7e22ce, #9333ea);
+  background: #0a0a0a;
   color: white;
 }
 
 .chat-send-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #9333ea, #a855f7);
-  box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+  background: #1a1a1a;
+  box-shadow: 0 0 15px rgba(255,255,255,0.35);
 }
 
 /* Chat messages scrollbar */
@@ -481,12 +481,12 @@
 }
 
 .chat-messages::-webkit-scrollbar-thumb {
-  background: rgba(168, 85, 247, 0.25);
+  background: rgba(255,255,255,0.18);
   border-radius: 4px;
 }
 
 .chat-messages::-webkit-scrollbar-thumb:hover {
-  background: rgba(168, 85, 247, 0.4);
+  background: rgba(255,255,255,0.35);
 }
 
 /* Mobile chat - fullscreen */
