@@ -128,7 +128,7 @@ export function Skills() {
               <div
                 key={`row1-${skill.name}-${index}`}
                 title={skill.name}
-                className="group relative mx-2 flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-[#0d0818] shadow-md transition-all duration-300 hover:scale-110 hover:-translate-y-1 hover:border-purple-400/50 hover:bg-purple-950/40 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] sm:h-20 sm:w-20"
+                className="group relative mx-2 flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-[#111111] shadow-md transition-all duration-300 hover:scale-110 hover:-translate-y-1 hover:border-white/30 hover:bg-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] sm:h-20 sm:w-20"
               >
                 <img
                   src={skill.iconUrl}
@@ -150,7 +150,7 @@ export function Skills() {
               <div
                 key={`row2-${skill.name}-${index}`}
                 title={skill.name}
-                className="group relative mx-2 flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-[#0d0818] shadow-md transition-all duration-300 hover:scale-110 hover:-translate-y-1 hover:border-purple-400/50 hover:bg-purple-950/40 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] sm:h-20 sm:w-20"
+                className="group relative mx-2 flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-[#111111] shadow-md transition-all duration-300 hover:scale-110 hover:-translate-y-1 hover:border-white/30 hover:bg-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] sm:h-20 sm:w-20"
               >
                 <img
                   src={skill.iconUrl}

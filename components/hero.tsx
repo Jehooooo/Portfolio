@@ -38,7 +38,7 @@ export function Hero() {
       url: profile.email ? `mailto:${profile.email}` : '',
       icon: Mail,
       hoverStyle:
-        'hover:border-purple-400/60 hover:bg-purple-500/20 hover:text-purple-200 hover:shadow-[0_0_20px_rgba(168,85,247,0.5)]',
+        'hover:border-white/25 hover:bg-white/8 hover:text-foreground/80 hover:shadow-[0_0_20px_rgba(168,85,247,0.5)]',
     },
   ].filter((s) => s.url)
 
@@ -68,7 +68,7 @@ export function Hero() {
         <Reveal delay={250}>
           <h1 className="mt-5 text-balance font-bold tracking-tight text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl leading-[1.15]">
             Hi, I&apos;m{' '}
-            <span className="text-gradient-purple-violet block sm:inline">
+            <span className="text-gradient block sm:inline">
               <Typewriter
                 words={nameTitles}
                 typingSpeed={85}
@@ -92,7 +92,7 @@ export function Hero() {
               href={profile.resumeUrl || '/documents/JehoUpdatedResume.pdf'}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-purple-primary group inline-flex items-center gap-2.5 rounded-xl px-6 py-3.5 text-sm font-semibold text-white shadow-lg"
+              className="btn-bw-primary group inline-flex items-center gap-2.5 rounded-xl px-6 py-3.5 text-sm font-semibold text-white shadow-lg"
             >
               <FileText
                 size={18}
@@ -104,7 +104,7 @@ export function Hero() {
             <a
               href="#projects"
               onClick={smoothScrollTo}
-              className="btn-purple-secondary group inline-flex items-center gap-2.5 rounded-xl px-5 py-3.5 text-sm font-medium text-foreground"
+              className="btn-bw-secondary group inline-flex items-center gap-2.5 rounded-xl px-5 py-3.5 text-sm font-medium text-foreground"
             >
               <span>View My Projects</span>
               <ArrowUpRight
@@ -116,7 +116,7 @@ export function Hero() {
             <a
               href="#contact"
               onClick={smoothScrollTo}
-              className="btn-purple-secondary group inline-flex items-center gap-2.5 rounded-xl px-5 py-3.5 text-sm font-medium text-foreground"
+              className="btn-bw-secondary group inline-flex items-center gap-2.5 rounded-xl px-5 py-3.5 text-sm font-medium text-foreground"
             >
               <Mail
                 size={18}

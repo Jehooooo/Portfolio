@@ -198,21 +198,21 @@ export function AiChat() {
           {/* Header */}
           <div className="chat-header flex items-center gap-3 rounded-t-2xl px-5 py-4">
             <div className="relative">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-500/20 text-purple-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/8 text-foreground/70">
                 <Sparkles size={20} />
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[#0c0618] bg-green-400" />
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-semibold text-white">Jeho</h3>
-              <p className="text-xs text-purple-300/80">
+              <p className="text-xs text-foreground/60">
                 Ask me anything about me!
               </p>
             </div>
             <button
               type="button"
               onClick={resetChat}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-purple-300/60 transition-colors hover:bg-white/10 hover:text-purple-200"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-foreground/70/60 transition-colors hover:bg-white/10 hover:text-foreground/80"
               aria-label="Reset conversation"
               title="Reset conversation"
             >
@@ -289,7 +289,7 @@ export function AiChat() {
               placeholder="Ask me anything..."
               rows={1}
               disabled={isLoading}
-              className="chat-textarea flex-1 resize-none rounded-xl px-3.5 py-2.5 text-sm outline-none placeholder:text-purple-300/40 disabled:opacity-50"
+              className="chat-textarea flex-1 resize-none rounded-xl px-3.5 py-2.5 text-sm outline-none placeholder:text-foreground/30 disabled:opacity-50"
             />
             <button
               type="submit"
@@ -303,7 +303,7 @@ export function AiChat() {
 
           {/* Privacy Notice */}
           <div className="px-4 pb-2 text-center">
-            <p className="text-[10px] text-purple-300/40">
+            <p className="text-[10px] text-foreground/30">
               Conversations may be stored to help me improve :)
             </p>
           </div>

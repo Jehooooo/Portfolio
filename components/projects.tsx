@@ -15,7 +15,7 @@ export function Projects() {
       className="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 md:py-24"
     >
       <div className="max-w-2xl">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-purple-400 font-semibold">
+        <p className="font-mono text-xs uppercase tracking-[0.2em] text-foreground/60 font-semibold">
           Work & Case Studies
         </p>
         <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">

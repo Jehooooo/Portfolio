@@ -99,24 +99,24 @@ export function About() {
                 <h3 className="text-base font-semibold text-foreground sm:text-lg transition-colors duration-300 group-hover:text-white group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]">
                   {item.title}
                 </h3>
-                <span className="font-mono text-xs text-muted-foreground sm:text-sm transition-colors duration-300 group-hover:text-purple-300">
+                <span className="font-mono text-xs text-muted-foreground sm:text-sm transition-colors duration-300 group-hover:text-foreground/70">
                   {item.period}
                 </span>
               </div>
 
               {/* Subtitle: Organization + Tag */}
               <div className="mt-1 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-                <span className="font-medium text-muted-foreground transition-colors duration-300 group-hover:text-purple-200">
+                <span className="font-medium text-muted-foreground transition-colors duration-300 group-hover:text-foreground/80">
                   {item.organization}
                 </span>
                 <span className="text-muted-foreground/40">•</span>
-                <span className="rounded border border-white/15 bg-white/5 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground transition-all duration-300 group-hover:border-purple-400/50 group-hover:bg-purple-500/20 group-hover:text-purple-200 group-hover:shadow-[0_0_10px_rgba(168,85,247,0.3)]">
+                <span className="rounded border border-white/15 bg-white/5 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground transition-all duration-300 group-hover:border-white/20/50 group-hover:bg-white/8 group-hover:text-foreground/80 group-hover:shadow-[0_0_10px_rgba(168,85,247,0.3)]">
                   {item.category}
                 </span>
               </div>
 
               {/* Description */}
-              <p className="mt-3 text-xs leading-relaxed text-muted-foreground/80 sm:text-sm transition-colors duration-300 group-hover:text-purple-100/95">
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground/80 sm:text-sm transition-colors duration-300 group-hover:text-foreground/90/95">
                 {item.description}
               </p>
             </div>

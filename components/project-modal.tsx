@@ -74,11 +74,11 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
       />
 
       {/* Modal Container */}
-      <div className="relative z-10 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-purple-500/25 bg-background/95 p-6 sm:p-8 shadow-2xl shadow-purple-950/50 backdrop-blur-2xl animate-in zoom-in-95 duration-300">
+      <div className="relative z-10 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-white/12 bg-background/95 p-6 sm:p-8 shadow-2xl shadow-black/50 backdrop-blur-2xl animate-in zoom-in-95 duration-300">
         {/* Sticky Header Close Button */}
         <div className="sticky top-0 z-20 -mx-6 -mt-6 mb-6 flex items-center justify-between border-b border-border/60 bg-background/80 px-6 py-4 backdrop-blur-md sm:-mx-8 sm:-mt-8 sm:px-8">
           <div className="flex items-center gap-3">
-            <span className="rounded-full bg-purple-500/15 px-3 py-1 font-mono text-xs font-semibold text-purple-400 border border-purple-500/20">
+            <span className="rounded-full bg-muted px-3 py-1 font-mono text-xs font-semibold text-foreground/70 border border-border">
               {project.status}
             </span>
             <span className="font-mono text-xs text-muted-foreground">
@@ -90,7 +90,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-purple-500/20 hover:text-foreground"
+            className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-white/8 hover:text-foreground"
           >
             <X size={22} />
           </button>
@@ -102,14 +102,14 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
             {project.title}
           </h2>
           {project.subtitle && (
-            <p className="mt-2 text-balance font-mono text-sm leading-relaxed text-purple-400">
+            <p className="mt-2 text-balance font-mono text-sm leading-relaxed text-foreground/70">
               {project.subtitle}
             </p>
           )}
         </div>
 
         {/* Media Player Showcase */}
-        <div className="relative mb-8 aspect-video w-full overflow-hidden rounded-2xl border border-purple-500/20 bg-black/40 shadow-inner">
+        <div className="relative mb-8 aspect-video w-full overflow-hidden rounded-2xl border border-border bg-black/40 shadow-inner">
           {project.video ? (
             <video
               controls
@@ -147,10 +147,10 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-purple-950/20" />
+                  <div className="flex h-full w-full items-center justify-center bg-muted/30" />
                 )}
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors group-hover:bg-black/40">
-                  <span className="flex h-16 w-16 items-center justify-center rounded-full btn-purple-primary shadow-xl transition-transform group-hover:scale-110">
+                  <span className="flex h-16 w-16 items-center justify-center rounded-full btn-bw-primary shadow-xl transition-transform group-hover:scale-110">
                     <Play size={26} className="ml-1 text-white" fill="currentColor" />
                   </span>
                 </div>
@@ -170,8 +170,8 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
 
         {/* Overview */}
         {project.overview && (
-          <div className="mb-8 rounded-2xl border border-purple-500/20 bg-purple-950/20 p-5 sm:p-6 backdrop-blur-md">
-            <h3 className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-purple-400 font-semibold mb-3">
+          <div className="mb-8 rounded-2xl border border-border bg-muted/30 p-5 sm:p-6 backdrop-blur-md">
+            <h3 className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-foreground/70 font-semibold mb-3">
               <FileText size={16} /> System Overview
             </h3>
             <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
@@ -183,17 +183,17 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
         {/* Structured Incident Reporting Workflow Visual */}
         {project.workflow && project.workflow.length > 0 && (
           <div className="mb-8">
-            <h3 className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-purple-400 font-semibold mb-4">
+            <h3 className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-foreground/70 font-semibold mb-4">
               <AlertCircle size={16} /> 1. Structured Incident Reporting Workflow
             </h3>
             <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
               {project.workflow.map((item, idx) => (
                 <div
                   key={item.step}
-                  className="relative flex flex-col justify-between rounded-xl border border-purple-500/20 bg-card p-4 transition-colors hover:border-purple-500/40"
+                  className="relative flex flex-col justify-between rounded-xl border border-border bg-card p-4 transition-colors hover:border-border/60"
                 >
                   <div>
-                    <span className="inline-block rounded-md bg-purple-500/15 px-2 py-0.5 font-mono text-[10px] font-bold text-purple-400 border border-purple-500/20 mb-2">
+                    <span className="inline-block rounded-md bg-muted px-2 py-0.5 font-mono text-[10px] font-bold text-foreground/70 border border-border mb-2">
                       {item.status}
                     </span>
                     <h4 className="font-semibold text-sm text-foreground">
@@ -206,7 +206,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
                     )}
                   </div>
                   {idx < project.workflow!.length - 1 && (
-                    <div className="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 z-10 text-purple-400">
+                    <div className="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 z-10 text-foreground/70">
                       <ArrowRight size={16} />
                     </div>
                   )}
@@ -219,17 +219,17 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
         {/* Features Grid */}
         {project.features && project.features.length > 0 && (
           <div className="mb-8 space-y-4">
-            <h3 className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-purple-400 font-semibold mb-2">
+            <h3 className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-foreground/70 font-semibold mb-2">
               <BarChart3 size={16} /> Detailed System Features
             </h3>
             <div className="grid gap-4 sm:grid-cols-2">
               {project.features.map((feat) => (
                 <div
                   key={feat.title}
-                  className="rounded-2xl border border-purple-500/15 bg-card/60 p-5 backdrop-blur-sm transition-all hover:border-purple-500/30"
+                  className="rounded-2xl border border-border bg-card/60 p-5 backdrop-blur-sm transition-all hover:border-border/50"
                 >
                   <h4 className="font-semibold text-base text-foreground mb-3 flex items-center gap-2">
-                    <CheckCircle2 size={16} className="text-purple-400 shrink-0" />
+                    <CheckCircle2 size={16} className="text-foreground/70 shrink-0" />
                     {feat.title}
                   </h4>
                   <ul className="space-y-2">
@@ -238,7 +238,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
                         key={detail}
                         className="text-xs text-muted-foreground flex items-start gap-2 leading-relaxed"
                       >
-                        <span className="h-1.5 w-1.5 rounded-full bg-purple-400 shrink-0 mt-1.5" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-foreground/50 shrink-0 mt-1.5" />
                         <span>{detail}</span>
                       </li>
                     ))}
@@ -250,8 +250,8 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
         )}
 
         {/* 🛠️ Technologies Used */}
-        <div className="mb-8 rounded-2xl border border-purple-500/20 bg-card p-5 sm:p-6">
-          <h3 className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-purple-400 font-semibold mb-4">
+        <div className="mb-8 rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <h3 className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-foreground/70 font-semibold mb-4">
             <Cpu size={16} /> 🛠️ Technologies Used
           </h3>
 
@@ -260,9 +260,9 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
               {project.detailedTech.map((item) => (
                 <div
                   key={item.category}
-                  className="flex flex-col justify-between rounded-xl border border-purple-500/15 bg-purple-950/20 p-3.5"
+                  className="flex flex-col justify-between rounded-xl border border-border bg-muted/30 p-3.5"
                 >
-                  <span className="font-mono text-[11px] font-semibold text-purple-300/80 uppercase">
+                  <span className="font-mono text-[11px] font-semibold text-foreground/60 uppercase">
                     {item.category}
                   </span>
                   <span className="mt-1 text-sm font-medium text-foreground">
@@ -276,7 +276,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
               {project.technologies.map((tech) => (
                 <span
                   key={tech}
-                  className="rounded-lg border border-purple-500/20 bg-purple-950/30 px-3 py-1 font-mono text-xs text-purple-200"
+                  className="rounded-lg border border-border bg-muted/40 px-3 py-1 font-mono text-xs text-foreground/80"
                 >
                   {tech}
                 </span>
@@ -287,11 +287,11 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
 
         {/* System Video Walkthrough at the Bottom */}
         {project.bottomVideo && (
-          <div className="mb-8 rounded-2xl border border-purple-500/20 bg-card p-5 sm:p-6">
-            <h3 className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-purple-400 font-semibold mb-4">
+          <div className="mb-8 rounded-2xl border border-border bg-card p-5 sm:p-6">
+            <h3 className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-foreground/70 font-semibold mb-4">
               <Play size={16} /> System Demonstration Video
             </h3>
-            <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-purple-500/20 bg-black/40 shadow-inner">
+            <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-black/40 shadow-inner">
               <video
                 controls
                 preload="metadata"
@@ -316,7 +316,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
                 href={project.liveUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="btn-purple-primary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-white shadow-md"
+                className="btn-bw-primary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-white shadow-md"
               >
                 Live Demo <ExternalLink size={14} />
               </a>
@@ -326,7 +326,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
                 href={project.githubUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="btn-purple-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-foreground"
+                className="btn-bw-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-foreground"
               >
                 <GithubIcon size={14} /> GitHub Repo
               </a>
@@ -334,7 +334,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="btn-purple-secondary rounded-xl px-4 py-2 text-xs font-semibold text-foreground"
+              className="btn-bw-secondary rounded-xl px-4 py-2 text-xs font-semibold text-foreground"
             >
               Close Showcase
             </button>

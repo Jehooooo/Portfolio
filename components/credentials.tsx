@@ -35,10 +35,10 @@ export function Credentials() {
                 <button
                   type="button"
                   onClick={() => setSelectedCert(cert)}
-                  className="glass group flex w-full items-center justify-between rounded-2xl p-5 text-left transition-all duration-300 hover:scale-[1.02] hover:border-purple-400/40 hover:bg-purple-950/30 hover:shadow-[0_0_25px_rgba(168,85,247,0.25)]"
+                  className="glass group flex w-full items-center justify-between rounded-2xl p-5 text-left transition-all duration-300 hover:scale-[1.02] hover:border-white/25 hover:bg-white/6 hover:shadow-[0_0_25px_rgba(168,85,247,0.25)]"
                 >
                   <div className="flex items-center gap-4">
-                    <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-accent-brand/15 text-accent-brand transition-transform duration-300 group-hover:scale-110 group-hover:bg-purple-500/25">
+                    <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-accent-brand/15 text-accent-brand transition-transform duration-300 group-hover:scale-110 group-hover:bg-white/10">
                       <Award size={22} />
                     </span>
                     <div>
@@ -50,7 +50,7 @@ export function Credentials() {
                       </p>
                     </div>
                   </div>
-                  <span className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[11px] text-muted-foreground transition-all group-hover:border-purple-400/50 group-hover:bg-purple-500/20 group-hover:text-purple-200">
+                  <span className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[11px] text-muted-foreground transition-all group-hover:border-white/20/50 group-hover:bg-white/8 group-hover:text-foreground/80">
                     <Eye size={12} />
                     View
                   </span>
@@ -68,7 +68,7 @@ export function Credentials() {
               {softSkills.map((skill) => (
                 <li
                   key={skill}
-                  className="glass rounded-full px-4 py-2 text-sm text-foreground transition-all duration-300 hover:scale-105 hover:border-purple-500/40 hover:text-white"
+                  className="glass rounded-full px-4 py-2 text-sm text-foreground transition-all duration-300 hover:scale-105 hover:border-white/25 hover:text-white"
                 >
                   {skill}
                 </li>
@@ -85,20 +85,20 @@ export function Credentials() {
           onClick={() => setSelectedCert(null)}
         >
           <div
-            className="glass-strong relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-purple-500/30 shadow-2xl animate-in zoom-in-95 duration-200"
+            className="glass-strong relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-white/15 shadow-2xl animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-white/10 p-5 sm:px-6">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/20 text-purple-300">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/8 text-foreground/70">
                   <Award size={20} />
                 </span>
                 <div>
                   <h3 className="text-base font-bold text-white sm:text-lg">
                     {selectedCert.title}
                   </h3>
-                  <p className="text-xs text-purple-200/80">
+                  <p className="text-xs text-foreground/70">
                     Issuer: {selectedCert.issuer}
                   </p>
                 </div>
@@ -116,7 +116,7 @@ export function Credentials() {
             {/* Modal Content / Document Preview */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
               {selectedCert.description && (
-                <p className="text-xs sm:text-sm text-purple-100/90 leading-relaxed bg-purple-950/40 border border-purple-500/20 rounded-xl p-3.5">
+                <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed bg-white/4 border border-white/12 rounded-xl p-3.5">
                   {selectedCert.description}
                 </p>
               )}
@@ -144,7 +144,7 @@ export function Credentials() {
                 href={selectedCert.fileUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-xs font-semibold text-purple-100 transition-all hover:bg-white/10 hover:text-white"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-xs font-semibold text-foreground/90 transition-all hover:bg-white/10 hover:text-white"
               >
                 <ExternalLink size={14} />
                 Open Full Document
@@ -152,7 +152,7 @@ export function Credentials() {
               <a
                 href={selectedCert.fileUrl}
                 download
-                className="btn-purple-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold text-white shadow-md"
+                className="btn-bw-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold text-white shadow-md"
               >
                 <Download size={14} />
                 Download Certificate

@@ -21,20 +21,20 @@ export function Contact() {
 
 
           {/* Quick contact details grid */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm sm:text-base text-purple-200/90">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm sm:text-base text-foreground/80/90">
             <a
               href={`mailto:${profile.email}`}
-              className="flex items-center gap-2 transition-colors hover:text-purple-300"
+              className="flex items-center gap-2 transition-colors hover:text-foreground/70"
             >
-              <Mail size={18} className="text-purple-400" />
+              <Mail size={18} className="text-foreground/60" />
               <span>{profile.email}</span>
             </a>
             {profile.phone && (
               <a
                 href={`tel:${profile.phone}`}
-                className="flex items-center gap-2 transition-colors hover:text-purple-300"
+                className="flex items-center gap-2 transition-colors hover:text-foreground/70"
               >
-                <Phone size={18} className="text-purple-400" />
+                <Phone size={18} className="text-foreground/60" />
                 <span>{profile.phone}</span>
               </a>
             )}
@@ -44,7 +44,7 @@ export function Contact() {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <a
               href={`mailto:${profile.email}`}
-              className="btn-purple-primary inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-medium text-white transition-transform duration-200 hover:-translate-y-0.5"
+              className="btn-bw-primary inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-medium text-white transition-transform duration-200 hover:-translate-y-0.5"
             >
               <Mail size={16} />
               Email Me
@@ -54,7 +54,7 @@ export function Contact() {
                 href={profile.resumeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl border border-purple-500/20 bg-purple-950/30 px-5 py-3 text-sm font-medium text-purple-100 transition-all duration-200 hover:border-purple-400/40 hover:bg-purple-900/40"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/12 bg-white/6 px-5 py-3 text-sm font-medium text-foreground/90 transition-all duration-200 hover:border-white/25 hover:bg-white/8"
               >
                 <FileText size={16} />
                 View Resume

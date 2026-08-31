@@ -134,40 +134,38 @@
     transition: background 0.4s ease, border-color 0.4s ease;
   }
 
-  .text-gradient-purple-violet {
-    background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 35%, #ffffff 70%, #111111 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
+  .text-gradient {
+  background: linear-gradient(135deg, #ffffff 0%, #aaaaaa 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 
-  .btn-purple-primary {
-    background: linear-gradient(135deg, rgba(25, 10, 42, 0.95) 0%, rgba(88, 28, 135, 0.9) 60%, rgba(126, 34, 206, 0.95) 100%);
-    border: 1px solid rgba(192, 132, 252, 0.35);
-    box-shadow: 0 0 15px rgba(255,255,255,0.18);
-    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  }
+  .btn-bw-primary {
+  background: #0a0a0a;
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+  color: #ffffff;
+}
 
-  .btn-purple-primary:hover {
-    transform: translateY(-3px);
-    background: linear-gradient(135deg, rgba(35, 12, 60, 0.98) 0%, rgba(109, 40, 217, 0.95) 60%, rgba(147, 51, 234, 1) 100%);
-    border-color: rgba(216, 180, 254, 0.6);
-    box-shadow: 0 0 30px rgba(255,255,255,0.45), 0 8px 25px rgba(126, 34, 206, 0.4);
-  }
+  .btn-bw-primary:hover {
+  background: #1a1a1a;
+  border-color: rgba(255,255,255,0.3);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
 
-  .btn-purple-secondary {
-    background: linear-gradient(135deg, rgba(12, 5, 22, 0.85) 0%, rgba(30, 10, 50, 0.7) 100%);
-    border: 1px solid rgba(168, 85, 247, 0.22);
-    box-shadow: 0 0 10px rgba(147, 51, 234, 0.15);
-    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  }
+  .btn-bw-secondary {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: none;
+  color: #f5f5f5;
+}
 
-  .btn-purple-secondary:hover {
-    transform: translateY(-3px);
-    background: linear-gradient(135deg, rgba(22, 9, 38, 0.92) 0%, rgba(58, 18, 96, 0.85) 100%);
-    border-color: rgba(192, 132, 252, 0.45);
-    box-shadow: 0 0 25px rgba(255,255,255,0.35);
-  }
+  .btn-bw-secondary:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.30);
+  box-shadow: 0 4px 16px rgba(255,255,255,0.05);
+}
 }
 
 /* â”€â”€ Light mode overrides â”€â”€ */
@@ -181,40 +179,40 @@
   border: 1px solid rgba(255,255,255,0.12);
 }
 
-:root:not(.dark) .text-gradient-purple-violet {
-  background: linear-gradient(135deg, #111111 0%, #ffffff 35%, #ffffff 70%, #0a0a0a 100%);
+:root:not(.dark) .text-gradient {
+  background: linear-gradient(135deg, #0a0a0a 0%, #555555 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-:root:not(.dark) .btn-purple-primary {
+:root:not(.dark) .btn-bw-primary {
   background: #0a0a0a;
-  border: 1px solid rgba(255,255,255,0.30);
-  box-shadow: 0 4px 14px rgba(255,255,255,0.14);
+  border: 1px solid rgba(0,0,0,0.2);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
   color: #ffffff;
 }
 
-:root:not(.dark) .btn-purple-primary:hover {
+:root:not(.dark) .btn-bw-primary:hover {
   background: #1a1a1a;
-  border-color: rgba(255,255,255,0.55);
-  box-shadow: 0 6px 20px rgba(255,255,255,0.25);
+  border-color: rgba(0,0,0,0.35);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
 }
 
-:root:not(.dark) .btn-purple-secondary {
-  background: rgba(243, 232, 255, 0.8);
-  border: 1px solid rgba(255,255,255,0.14);
-  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.08);
+:root:not(.dark) .btn-bw-secondary {
+  background: rgba(0,0,0,0.05);
+  border: 1px solid rgba(0,0,0,0.12);
+  box-shadow: none;
   color: #0a0a0a;
 }
 
-:root:not(.dark) .btn-purple-secondary:hover {
-  background: rgba(233, 213, 255, 0.9);
-  border-color: rgba(255,255,255,0.25);
-  box-shadow: 0 4px 16px rgba(255,255,255,0.12);
+:root:not(.dark) .btn-bw-secondary:hover {
+  background: rgba(0,0,0,0.10);
+  border-color: rgba(0,0,0,0.25);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
 }
 
-/* Ambient background glow â€” subtle purple gradients for depth without busyness */
+/* Ambient background glow */
 .page-glow {
   position: fixed;
   inset: 0;

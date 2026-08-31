@@ -37,7 +37,7 @@ export function SiteNav() {
         <a
           href="#home"
           onClick={smoothScrollTo}
-          className="font-mono text-sm font-semibold tracking-tight text-gradient-purple-violet transition-opacity hover:opacity-80"
+          className="font-mono text-sm font-semibold tracking-tight text-foreground transition-opacity hover:opacity-80"
         >
           {profile.name}
         </a>
@@ -61,7 +61,7 @@ export function SiteNav() {
           <a
             href="#contact"
             onClick={smoothScrollTo}
-            className="hidden btn-purple-primary rounded-xl px-4 py-2 text-xs font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5 sm:inline-block"
+            className="hidden btn-bw-primary rounded-xl px-4 py-2 text-xs font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5 sm:inline-block"
           >
             Let&apos;s Work Together
           </a>
@@ -114,7 +114,7 @@ export function SiteNav() {
                   setOpen(false)
                   smoothScrollTo(e)
                 }}
-                className="mt-1 block rounded-xl btn-purple-primary px-4 py-3 text-center text-base font-semibold text-white"
+                className="mt-1 block rounded-xl btn-bw-primary px-4 py-3 text-center text-base font-semibold text-white"
               >
                 Let&apos;s Work Together
               </a>
