@@ -114,7 +114,7 @@ export function GitHubHeatmap({ username }: { username: string }) {
       </div>
 
       {/* Grid + year sidebar */}
-      <div className="flex gap-3 items-start">
+      <div className="flex flex-col gap-4 sm:flex-row sm:gap-3 sm:items-start">
         {/* Heatmap */}
         <div className="flex-1 min-w-0">
           {error && !loading ? (
@@ -194,7 +194,7 @@ export function GitHubHeatmap({ username }: { username: string }) {
         </div>
 
         {/* Year sidebar */}
-        <div className="flex flex-col gap-1 shrink-0">
+        <div className="flex flex-row flex-wrap gap-1.5 sm:flex-col sm:gap-1 sm:shrink-0">
           {YEARS.map((y) => (
             <button
               key={y}

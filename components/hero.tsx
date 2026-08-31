@@ -46,12 +46,12 @@ export function Hero() {
   return (
     <section
       id="home"
-      className="relative mx-auto flex min-h-[90vh] max-w-6xl flex-col items-center justify-center gap-10 px-4 py-20 sm:px-6 md:py-28 lg:flex-row lg:items-center lg:justify-between lg:gap-14"
+      className="relative mx-auto flex min-h-svh max-w-6xl flex-col items-center justify-center gap-8 px-4 py-16 sm:px-6 sm:py-20 md:py-24 lg:flex-row lg:items-center lg:justify-between lg:gap-14"
     >
       {/* Visual / Profile Picture Column */}
       <Reveal delay={100} className="flex justify-center lg:order-2 lg:flex-1">
         <div className="profile-border-glow group cursor-pointer rounded-full">
-          <div className="relative h-44 w-44 overflow-hidden rounded-full sm:h-52 sm:w-52 md:h-60 md:w-60">
+          <div className="relative h-36 w-36 overflow-hidden rounded-full sm:h-48 sm:w-48 md:h-56 md:w-56 lg:h-60 lg:w-60">
             <Image
               src={profile.avatarUrl || '/images/profile.png'}
               alt={profile.name}
@@ -67,7 +67,7 @@ export function Hero() {
       {/* Copy / Main Hero Content */}
       <div className="flex flex-1 flex-col items-center text-center lg:order-1 lg:items-start lg:text-left">
         <Reveal delay={250}>
-          <h1 className="mt-5 text-balance font-bold tracking-tight text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl leading-[1.15]">
+          <h1 className="mt-4 text-balance font-bold tracking-tight text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl leading-[1.18]">
             Hi, I&apos;m{' '}
             <span className="text-gradient block sm:inline">
               <Typewriter
@@ -82,13 +82,13 @@ export function Hero() {
         </Reveal>
 
         <Reveal delay={350}>
-          <p className="mt-5 max-w-xl text-balance text-base sm:text-lg leading-relaxed text-muted-foreground font-normal">
+          <p className="mt-4 max-w-xl text-balance text-sm sm:text-base lg:text-lg leading-relaxed text-muted-foreground font-normal">
             I am Jeho, a 3rd BSCS Student from DMMMSU-SLUC passionate about AI and Web Development. I am a quick learner and a team player who is always looking for new challenges to grow and improve.
           </p>
         </Reveal>
 
         <Reveal delay={450}>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5 lg:justify-start">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3.5 lg:justify-start">
             <a
               href={profile.resumeUrl || '/documents/JehoUpdatedResume.pdf'}
               target="_blank"
@@ -154,7 +154,7 @@ export function Hero() {
             </div>
           </Reveal>
         )}
-        <Reveal delay={650} className="mt-6 w-full">
+        <Reveal delay={650} className="mt-6 w-full max-w-full overflow-hidden">
           <GitHubHeatmap username="Jehooooo" />
         </Reveal>
       </div>

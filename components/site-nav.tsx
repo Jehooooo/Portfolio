@@ -37,7 +37,7 @@ export function SiteNav() {
         <a
           href="#home"
           onClick={smoothScrollTo}
-          className="font-mono text-sm font-semibold tracking-tight text-foreground transition-opacity hover:opacity-80"
+          className="font-mono text-sm font-semibold tracking-tight text-foreground transition-opacity hover:opacity-80 truncate max-w-[140px] sm:max-w-none"
         >
           {profile.name}
         </a>

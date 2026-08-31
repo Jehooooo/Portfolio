@@ -81,15 +81,15 @@ export function Credentials() {
       {/* Certificate Detail Modal */}
       {selectedCert && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md transition-opacity animate-in fade-in duration-200 sm:p-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 backdrop-blur-md transition-opacity animate-in fade-in duration-200 sm:p-6"
           onClick={() => setSelectedCert(null)}
         >
           <div
-            className="glass-strong relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-white/15 shadow-2xl animate-in zoom-in-95 duration-200"
+            className="glass-strong relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-white/10 p-5 sm:px-6">
+            <div className="flex items-center justify-between border-b border-white/10 p-4 sm:p-5 sm:px-6">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/8 text-foreground/70">
                   <Award size={20} />

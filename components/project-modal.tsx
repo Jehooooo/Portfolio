@@ -66,7 +66,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
   const vm = project.vimeo ? vimeoId(project.vimeo) : null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-10">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 md:p-10">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
@@ -74,9 +74,9 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
       />
 
       {/* Modal Container */}
-      <div className="relative z-10 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-white/12 bg-background/95 p-6 sm:p-8 shadow-2xl shadow-black/50 backdrop-blur-2xl animate-in zoom-in-95 duration-300">
+      <div className="relative z-10 max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-2xl sm:rounded-3xl border border-white/12 bg-background/95 p-4 sm:p-8 shadow-2xl shadow-black/50 backdrop-blur-2xl animate-in zoom-in-95 duration-300">
         {/* Sticky Header Close Button */}
-        <div className="sticky top-0 z-20 -mx-6 -mt-6 mb-6 flex items-center justify-between border-b border-border/60 bg-background/80 px-6 py-4 backdrop-blur-md sm:-mx-8 sm:-mt-8 sm:px-8">
+        <div className="sticky top-0 z-20 -mx-4 -mt-4 mb-5 flex items-center justify-between border-b border-border/60 bg-background/90 px-4 py-3 backdrop-blur-md sm:-mx-8 sm:-mt-8 sm:mb-6 sm:px-8 sm:py-4">
           <div className="flex items-center gap-3">
             <span className="rounded-full bg-muted px-3 py-1 font-mono text-xs font-semibold text-foreground/70 border border-border">
               {project.status}
