@@ -67,9 +67,9 @@ export function Hero() {
       {/* Copy / Main Hero Content */}
       <div className="flex w-full min-w-0 max-w-full flex-1 flex-col items-center text-center lg:order-1 lg:items-start lg:text-left">
         <Reveal delay={250}>
-          <h1 className="mt-4 text-balance font-bold tracking-tight text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl leading-[1.18]">
-            Hi, I&apos;m{' '}
-            <span className="text-gradient block sm:inline">
+          <h1 className="mt-4 font-bold tracking-tight text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl leading-tight whitespace-nowrap flex items-center justify-center lg:justify-start gap-1.5 sm:gap-2">
+            <span>Hi, I&apos;m</span>
+            <span className="text-gradient inline">
               <Typewriter
                 words={nameTitles}
                 typingSpeed={85}
