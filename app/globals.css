@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: 'Ysabeau SC', sans-serif;
+  --font-sans: 'Source Code Pro', sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --color-accent-brand: var(--accent-brand);
   --color-accent-brand-foreground: var(--accent-brand-foreground);
@@ -103,7 +103,7 @@
     @apply border-border outline-ring/50;
   }
   html, body {
-    font-family: 'Ysabeau SC', sans-serif;
+    font-family: 'Source Code Pro', sans-serif;
     font-optical-sizing: auto;
     font-style: normal;
     background-color: var(--background);
@@ -508,8 +508,8 @@
 
 
 /* Ysabeau SC Utility Class */
-.ysabeau-sc {
-  font-family: 'Ysabeau SC', sans-serif;
+.source-code-pro {
+  font-family: 'Source Code Pro', sans-serif;
   font-optical-sizing: auto;
   font-style: normal;
 }
