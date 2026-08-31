@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Jehosue Biscarra',
   keywords: [
-    'Jehosue Biscarra',
+    'Jehosue ',
   ],
-  authors: [{ name: 'Jehosue Biscarra' }],
+  authors: [{ name: 'Jehosue ' }],
 }
 
 export const viewport: Viewport = {
