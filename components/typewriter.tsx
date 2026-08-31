@@ -16,10 +16,10 @@ interface TypewriterProps {
 export function Typewriter({
   words,
   text,
-  typingSpeed = 90,
-  deletingSpeed = 50,
+  typingSpeed = 85,
+  deletingSpeed = 45,
   delayAfterType = 2000,
-  delayAfterDelete = 300,
+  delayAfterDelete = 350,
   loop = true,
   className = '',
 }: TypewriterProps) {
@@ -30,6 +30,8 @@ export function Typewriter({
   const [isComplete, setIsComplete] = useState(false)
 
   const currentWord = wordList[wordIndex % wordList.length]
+  // Find longest word to reserve space and prevent any layout shift/jumping
+  const longestWord = wordList.reduce((a, b) => (a.length > b.length ? a : b), '')
 
   useEffect(() => {
     let timer: NodeJS.Timeout
@@ -65,9 +67,18 @@ export function Typewriter({
   }, [displayedText, isDeleting, currentWord, typingSpeed, deletingSpeed, delayAfterType, delayAfterDelete, loop, wordIndex, wordList.length])
 
   return (
-    <span className={`inline-flex items-center ${className}`}>
-      <span>{displayedText}</span>
-      {!isComplete && <span className="typewriter-cursor" aria-hidden="true" />}
+    <span className={`inline-grid grid-cols-1 grid-rows-1 items-center align-middle ${className}`}>
+      {/* Invisible anchor word that strictly locks the width & height - zero layout jump */}
+      <span className="invisible opacity-0 select-none col-start-1 row-start-1 pointer-events-none whitespace-nowrap" aria-hidden="true">
+        {longestWord}
+        <span className="inline-block w-[3px]" />
+      </span>
+
+      {/* Active typing text in the exact same reserved cell */}
+      <span className="col-start-1 row-start-1 inline-flex items-center whitespace-nowrap">
+        <span>{displayedText}</span>
+        {!isComplete && <span className="typewriter-cursor" aria-hidden="true" />}
+      </span>
     </span>
   )
 }
