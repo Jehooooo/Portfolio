@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Ysabeau SC', sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --color-accent-brand: var(--accent-brand);
   --color-accent-brand-foreground: var(--accent-brand-foreground);
@@ -102,7 +102,10 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
+  html, body {
+    font-family: 'Ysabeau SC', sans-serif;
+    font-optical-sizing: auto;
+    font-style: normal;
     background-color: var(--background);
     color: var(--foreground);
     overflow-x: hidden;
@@ -167,7 +170,7 @@
   }
 }
 
-/* ── Light mode overrides ── */
+/* â”€â”€ Light mode overrides â”€â”€ */
 :root:not(.dark) .glass {
   background: rgba(255, 255, 255, 0.6);
   border: 1px solid rgba(147, 51, 234, 0.15);
@@ -211,7 +214,7 @@
   box-shadow: 0 4px 16px rgba(147, 51, 234, 0.18);
 }
 
-/* Ambient background glow — subtle purple gradients for depth without busyness */
+/* Ambient background glow â€” subtle purple gradients for depth without busyness */
 .page-glow {
   position: fixed;
   inset: 0;
@@ -336,7 +339,7 @@
   }
 }
 
-/* ── AI Chat Widget ── */
+/* â”€â”€ AI Chat Widget â”€â”€ */
 
 /* FAB button glow */
 .chat-fab-glow {
@@ -502,3 +505,13 @@
     border-radius: 0;
   }
 }
+
+
+/* Ysabeau SC Utility Class */
+.ysabeau-sc {
+  font-family: 'Ysabeau SC', sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+}
+
+
