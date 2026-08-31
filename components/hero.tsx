@@ -10,7 +10,7 @@ import { smoothScrollTo } from '@/lib/smooth-scroll'
 import { GitHubHeatmap } from '@/components/github-heatmap'
 
 export function Hero() {
-  const nameTitles = [profile.name, 'CS Student']
+  const nameTitles = ['Jeho', 'CS Student']
 
   const socials = [
     {

@@ -23,7 +23,7 @@ export function Typewriter({
   loop = true,
   className = '',
 }: TypewriterProps) {
-  const wordList = words || (text ? [text] : ['Jehosue Biscarra'])
+  const wordList = words || (text ? [text] : ['Jeho'])
   const [wordIndex, setWordIndex] = useState(0)
   const [displayedText, setDisplayedText] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
