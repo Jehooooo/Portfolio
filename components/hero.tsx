@@ -87,17 +87,17 @@ export function Hero() {
           </p>
         </Reveal>
 
-        <Reveal delay={450}>
-          <div className="mt-6 flex w-full flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-center gap-2.5 sm:gap-3.5 lg:justify-start">
+        <Reveal delay={450} className="w-full">
+          <div className="mt-6 flex flex-row flex-nowrap items-center justify-center lg:justify-start gap-1.5 sm:gap-2.5 md:gap-3 w-full">
             <a
               href={profile.resumeUrl || '/documents/JehoUpdatedResume.pdf'}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-bw-primary group inline-flex items-center justify-center gap-2.5 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-lg w-full sm:w-auto"
+              className="btn-bw-primary group inline-flex items-center justify-center gap-1 sm:gap-2 rounded-xl px-2.5 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3 text-[11px] sm:text-xs md:text-sm font-semibold text-white shadow-md whitespace-nowrap shrink-0"
             >
               <FileText
-                size={18}
-                className="transition-transform duration-300 group-hover:-translate-y-0.5"
+                size={14}
+                className="shrink-0 transition-transform duration-300 group-hover:-translate-y-0.5 sm:w-4 sm:h-4"
               />
               <span>View Resume</span>
             </a>
@@ -105,23 +105,23 @@ export function Hero() {
             <a
               href="#projects"
               onClick={smoothScrollTo}
-              className="btn-bw-secondary group inline-flex items-center justify-center gap-2.5 rounded-xl px-5 py-3 text-sm font-medium text-foreground w-full sm:w-auto"
+              className="btn-bw-secondary group inline-flex items-center justify-center gap-1 sm:gap-2 rounded-xl px-2.5 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3 text-[11px] sm:text-xs md:text-sm font-medium text-foreground whitespace-nowrap shrink-0"
             >
               <span>View My Projects</span>
               <ArrowUpRight
-                size={18}
-                className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                size={14}
+                className="shrink-0 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 sm:w-4 sm:h-4"
               />
             </a>
 
             <a
               href="#contact"
               onClick={smoothScrollTo}
-              className="btn-bw-secondary group inline-flex items-center justify-center gap-2.5 rounded-xl px-5 py-3 text-sm font-medium text-foreground w-full sm:w-auto"
+              className="btn-bw-secondary group inline-flex items-center justify-center gap-1 sm:gap-2 rounded-xl px-2.5 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3 text-[11px] sm:text-xs md:text-sm font-medium text-foreground whitespace-nowrap shrink-0"
             >
               <Mail
-                size={18}
-                className="text-primary transition-colors duration-300 group-hover:text-foreground"
+                size={14}
+                className="shrink-0 text-primary transition-colors duration-300 group-hover:text-foreground sm:w-4 sm:h-4"
               />
               <span>Contact Me</span>
             </a>
