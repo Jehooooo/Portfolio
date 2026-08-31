@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface ContributionDay {
   date: string
@@ -61,7 +61,7 @@ function getMonthLabels(weeks: ContributionWeek[]) {
 }
 
 const CURRENT_YEAR = new Date().getFullYear()
-const YEARS = Array.from({ length: CURRENT_YEAR - 2022 }, (_, i) => CURRENT_YEAR - i) // e.g. [2026, 2025, 2024, 2023]
+const YEARS = Array.from({ length: CURRENT_YEAR - 2022 }, (_, i) => CURRENT_YEAR - i)
 
 export function GitHubHeatmap({ username }: { username: string }) {
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR)
@@ -70,6 +70,8 @@ export function GitHubHeatmap({ username }: { username: string }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null)
+  // Keep previous weeks visible while new year loads (no layout shift)
+  const prevWeeksRef = useRef<ContributionWeek[]>([])
 
   useEffect(() => {
     setLoading(true)
@@ -77,21 +79,29 @@ export function GitHubHeatmap({ username }: { username: string }) {
     fetch(`https://github-contributions-api.jogruber.de/v4/${username}?y=${selectedYear}`)
       .then((r) => r.json())
       .then((data: ContributionData) => {
-        setWeeks(groupIntoWeeks(data.contributions))
+        const w = groupIntoWeeks(data.contributions)
+        prevWeeksRef.current = w
+        setWeeks(w)
         setTotal(data.total[selectedYear] ?? 0)
         setLoading(false)
       })
       .catch(() => { setError(true); setLoading(false) })
   }, [username, selectedYear])
 
-  const monthLabels = getMonthLabels(weeks)
+  // While loading use previous weeks so the grid height stays stable
+  const displayWeeks = loading && prevWeeksRef.current.length > 0 ? prevWeeksRef.current : weeks
+  const monthLabels = getMonthLabels(displayWeeks)
 
   return (
     <div className="w-full rounded-2xl border border-border bg-card/60 backdrop-blur-sm px-4 py-4 sm:px-5 sm:py-5">
       {/* Header */}
       <div className="mb-3 flex items-center justify-between gap-2 flex-wrap">
         <span className="font-mono text-xs font-semibold text-foreground/80 uppercase tracking-wider">
-          {loading ? 'Loading contributions...' : error ? 'GitHub Contributions' : `${total} contributions in ${selectedYear}`}
+          {loading
+            ? <span className="animate-pulse">Loading contributions...</span>
+            : error
+            ? 'GitHub Contributions'
+            : `${total} contributions in ${selectedYear}`}
         </span>
         <a
           href={`https://github.com/${username}`}
@@ -103,20 +113,16 @@ export function GitHubHeatmap({ username }: { username: string }) {
         </a>
       </div>
 
-      {/* Main layout: heatmap + year sidebar */}
+      {/* Grid + year sidebar */}
       <div className="flex gap-3 items-start">
         {/* Heatmap */}
         <div className="flex-1 min-w-0">
-          {loading ? (
-            <div className="flex h-24 items-center justify-center">
-              <span className="font-mono text-xs text-muted-foreground animate-pulse">Fetching activity...</span>
-            </div>
-          ) : error ? (
-            <div className="flex h-24 items-center justify-center">
+          {error && !loading ? (
+            <div className="flex h-[88px] items-center justify-center">
               <span className="font-mono text-xs text-muted-foreground">Unable to load contribution data.</span>
             </div>
           ) : (
-            <div className="relative overflow-x-auto">
+            <div className={`relative overflow-x-auto transition-opacity duration-300 ${loading ? 'opacity-40' : 'opacity-100'}`}>
               {/* Month labels */}
               <div className="relative mb-1 h-4" style={{ paddingLeft: '28px' }}>
                 {monthLabels.map(({ month, col }, i) => (
@@ -141,7 +147,7 @@ export function GitHubHeatmap({ username }: { username: string }) {
                 </div>
 
                 {/* Cells */}
-                {weeks.map((week, wi) => (
+                {displayWeeks.map((week, wi) => (
                   <div key={wi} className="flex flex-col gap-[2px]">
                     {week.days.map((day, di) => (
                       <div
@@ -150,7 +156,7 @@ export function GitHubHeatmap({ username }: { username: string }) {
                           day.date ? `cursor-default hover:opacity-75 ${LEVEL_COLORS[day.level]}` : 'bg-transparent'
                         }`}
                         onMouseEnter={(e) => {
-                          if (!day.date) return
+                          if (!day.date || loading) return
                           const r = (e.target as HTMLElement).getBoundingClientRect()
                           const p = (e.target as HTMLElement).closest('.relative')!.getBoundingClientRect()
                           setTooltip({
@@ -188,15 +194,20 @@ export function GitHubHeatmap({ username }: { username: string }) {
         </div>
 
         {/* Year sidebar */}
-        <div className="flex flex-col gap-1.5 shrink-0">
+        <div className="flex flex-col gap-1 shrink-0">
           {YEARS.map((y) => (
             <button
               key={y}
-              onClick={() => setSelectedYear(y)}
-              className={`font-mono text-[11px] px-2.5 py-1 rounded-lg transition-all duration-150 ${
+              type="button"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setSelectedYear(y)
+              }}
+              className={`font-mono text-[11px] px-2.5 py-1 rounded-lg transition-all duration-150 text-left ${
                 selectedYear === y
-                  ? 'bg-[#26a641] dark:bg-[#26a641] text-white font-bold'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-white/8 dark:hover:bg-white/8'
+                  ? 'bg-[#26a641] text-white font-bold shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
               }`}
             >
               {y}
