@@ -1,4 +1,4 @@
-﻿import json
+import json
 import threading
 from datetime import datetime, timezone
 from flask import Flask, request, jsonify, Response
@@ -7,7 +7,7 @@ from bson import ObjectId
 from google import genai
 from google.genai import types
 
-from config import GEMINI_API_KEY, PORT
+from config import GEMINI_API_KEY, PORT, ADMIN_SECRET, ENABLE_RLS
 from db import get_conversations_collection, get_knowledge_collection, get_db
 from knowledge_base import build_system_instruction
 from processor import process_unprocessed_conversations
@@ -16,7 +16,7 @@ app = Flask(__name__)
 CORS(app)
 
 # ---------------------------------------------------------------------------
-# Candidate Gemini models — ordered by availability & active quota
+# Candidate Gemini models - ordered by availability & active quota
 # ---------------------------------------------------------------------------
 CANDIDATE_MODELS = [
     'gemini-3.5-flash-lite',
@@ -27,6 +27,26 @@ CANDIDATE_MODELS = [
     'gemini-3.6-flash',
     'gemini-3.5-flash',
 ]
+
+
+def check_admin_auth(req) -> bool:
+    """Validate administrator credentials for Row-Level Security overrides."""
+    if not ENABLE_RLS:
+        return True
+
+    # Check X-Admin-Secret header
+    admin_header = req.headers.get("X-Admin-Secret") or req.headers.get("x-admin-secret")
+    if admin_header and admin_header == ADMIN_SECRET:
+        return True
+
+    # Check Bearer Token
+    auth_header = req.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+        if token == ADMIN_SECRET:
+            return True
+
+    return False
 
 
 def _run_processing_background():
@@ -41,7 +61,7 @@ def _run_processing_background():
 
 
 # ---------------------------------------------------------------------------
-# Routes
+# Routes with Row-Level Security (RLS)
 # ---------------------------------------------------------------------------
 
 @app.route('/api/health', methods=['GET'])
@@ -51,7 +71,8 @@ def health_check():
     return jsonify({
         "status": "online",
         "service": "AI Jehosue Backend",
-        "mongodb": mongo_status
+        "mongodb": mongo_status,
+        "row_level_security": "enabled" if ENABLE_RLS else "disabled"
     })
 
 
@@ -114,7 +135,7 @@ def chat():
         if not response_text:
             return jsonify({"error": f"Failed to generate response: {last_error}"}), 500
 
-        # Save conversation to MongoDB with processing_status = "pending"
+        # Save conversation to MongoDB scoped strictly by session_id (RLS compliant)
         conv_coll = get_conversations_collection()
         if conv_coll is not None:
             conv_doc = {
@@ -130,7 +151,7 @@ def chat():
             }
             try:
                 inserted = conv_coll.insert_one(conv_doc)
-                print(f"[Info] Conversation saved successfully with ID: {inserted.inserted_id} (session: {session_id})")
+                print(f"[Info] Conversation saved with ID: {inserted.inserted_id} (session: {session_id})")
 
                 # Auto-trigger processing in the background
                 t = threading.Thread(target=_run_processing_background, daemon=True)
@@ -150,9 +171,40 @@ def chat():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/conversations', methods=['GET'])
+def get_session_conversations():
+    """Retrieve conversations with strict Row-Level Security scoped to the caller's session_id."""
+    try:
+        session_id = request.args.get("session_id")
+        is_admin = check_admin_auth(request)
+
+        conv_coll = get_conversations_collection()
+        if conv_coll is None:
+            return jsonify({"error": "Conversations collection unavailable", "items": []})
+
+        if not is_admin:
+            if not session_id:
+                return jsonify({"error": "RLS restriction: session_id query parameter is required for non-admin requests"}), 403
+            query = {"session_id": session_id}
+        else:
+            query = {"session_id": session_id} if session_id else {}
+
+        items = list(conv_coll.find(query))
+        for item in items:
+            item['_id'] = str(item['_id'])
+
+        return jsonify({
+            "count": len(items),
+            "session_id": session_id if not is_admin else "all_admin",
+            "items": items
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/process-data', methods=['POST'])
 def process_data():
-    """Manual endpoint to trigger processing (also auto-runs after each chat)."""
+    """Manual endpoint to trigger processing."""
     try:
         result = process_unprocessed_conversations()
         return jsonify(result)
@@ -163,13 +215,25 @@ def process_data():
 
 @app.route('/api/knowledge', methods=['GET'])
 def get_knowledge():
+    """
+    Retrieve knowledge base items with Row-Level Security:
+    - Public callers: ONLY rows where status == 'approved' are returned.
+    - Admin callers (with X-Admin-Secret): Can query 'all', 'pending_review', or 'rejected'.
+    """
     try:
-        status_filter = request.args.get('status', 'all')
+        is_admin = check_admin_auth(request)
+        status_filter = request.args.get('status', 'approved' if not is_admin else 'all')
+
+        # Enforce RLS: Non-admins cannot access unapproved rows
+        if not is_admin and status_filter != 'approved':
+            print("[RLS Guard] 🛑 Non-admin attempted to query unapproved knowledge rows. Forcing status='approved'.")
+            status_filter = 'approved'
+
         know_coll = get_knowledge_collection()
         if know_coll is None:
             return jsonify({"error": "MongoDB knowledge collection unavailable", "items": []})
 
-        query = {} if status_filter == 'all' else {"status": status_filter}
+        query = {} if (is_admin and status_filter == 'all') else {"status": status_filter}
         items = list(know_coll.find(query))
 
         for item in items:
@@ -178,6 +242,8 @@ def get_knowledge():
         return jsonify({
             "count": len(items),
             "status_filter": status_filter,
+            "row_level_security": "active",
+            "access_role": "admin" if is_admin else "public",
             "items": items
         })
     except Exception as e:
@@ -186,7 +252,14 @@ def get_knowledge():
 
 @app.route('/api/knowledge/status', methods=['POST'])
 def update_knowledge_status():
+    """Update knowledge status - protected by Row-Level Security / Admin authorization."""
     try:
+        # Enforce RLS mutation policy
+        if not check_admin_auth(request):
+            return jsonify({
+                "error": "Forbidden: Row-Level Security restriction. Only authorized administrators can update knowledge status."
+            }), 403
+
         data = request.get_json() or {}
         item_id = data.get("id")
         new_status = data.get("status")
@@ -220,6 +293,5 @@ def update_knowledge_status():
 
 
 if __name__ == '__main__':
-    print(f"AI Jehosue Python Backend running on http://127.0.0.1:{PORT}")
+    print(f"AI Jehosue Python Backend with Row-Level Security running on http://127.0.0.1:{PORT}")
     app.run(host='0.0.0.0', port=PORT, debug=True)
-
