@@ -80,23 +80,23 @@ export function About() {
       {/* Timeline List */}
       <div className="relative mt-12 space-y-6 pl-8 sm:pl-10">
         {/* Continuous background vertical line */}
-        <div className="absolute left-2 top-2 bottom-2 w-px bg-white/15" />
+        <div className="absolute left-2 top-2 bottom-2 w-px bg-border" />
 
         {filteredItems.map((item, i) => (
           <Reveal key={item.id} delay={i * 60}>
-            <div className="group relative rounded-xl p-4 sm:p-5 transition-all duration-300 hover:bg-white/[0.03] hover:shadow-[0_0_30px_rgba(168,85,247,0.06)] border border-transparent hover:border-white/10">
+            <div className="group relative rounded-xl p-4 sm:p-5 transition-all duration-300 hover:bg-card/50 border border-transparent hover:border-border">
               {/* Glowing vertical line segment on hover */}
-              <div className="absolute -left-[24px] sm:-left-[32px] top-0 bottom-0 w-[2px] -translate-x-1/2 bg-white opacity-0 group-hover:opacity-100 shadow-[0_0_12px_rgba(255,255,255,0.9)] transition-all duration-300" />
+              <div className="absolute -left-[24px] sm:-left-[32px] top-0 bottom-0 w-[2px] -translate-x-1/2 bg-foreground opacity-0 group-hover:opacity-100 shadow-sm transition-all duration-300" />
 
               {/* Glowing node dot on hover */}
               <span
-                className="absolute -left-[24px] sm:-left-[32px] top-6 h-3 w-3 -translate-x-1/2 rounded-full border border-muted-foreground/40 bg-background transition-all duration-300 group-hover:border-white group-hover:bg-white group-hover:scale-125 group-hover:shadow-[0_0_14px_rgba(255,255,255,1)]"
+                className="absolute -left-[24px] sm:-left-[32px] top-6 h-3 w-3 -translate-x-1/2 rounded-full border border-muted-foreground/40 bg-background transition-all duration-300 group-hover:border-foreground group-hover:bg-foreground group-hover:scale-125"
                 aria-hidden="true"
               />
 
               {/* Title & Year */}
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <h3 className="text-base font-semibold text-foreground sm:text-lg transition-colors duration-300 group-hover:text-white group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]">
+                <h3 className="text-base font-bold text-foreground sm:text-lg transition-colors duration-300">
                   {item.title}
                 </h3>
                 <span className="font-mono text-xs text-muted-foreground sm:text-sm transition-colors duration-300 group-hover:text-foreground/70">
@@ -110,7 +110,7 @@ export function About() {
                   {item.organization}
                 </span>
                 <span className="text-muted-foreground/40">•</span>
-                <span className="rounded border border-white/15 bg-white/5 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground transition-all duration-300 group-hover:border-white/20/50 group-hover:bg-white/8 group-hover:text-foreground/80 group-hover:shadow-[0_0_10px_rgba(168,85,247,0.3)]">
+                <span className="rounded border border-border bg-card px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground transition-all duration-300 group-hover:border-foreground/30 group-hover:text-foreground">
                   {item.category}
                 </span>
               </div>

@@ -42,7 +42,7 @@ export function Credentials() {
                       <Award size={22} />
                     </span>
                     <div>
-                      <h3 className="text-sm font-semibold text-foreground transition-colors group-hover:text-white">
+                      <h3 className="text-sm font-semibold text-foreground transition-colors group-hover:text-foreground">
                         {cert.title}
                       </h3>
                       <p className="mt-0.5 text-xs text-muted-foreground">
@@ -68,7 +68,7 @@ export function Credentials() {
               {softSkills.map((skill) => (
                 <li
                   key={skill}
-                  className="glass rounded-full px-4 py-2 text-sm text-foreground transition-all duration-300 hover:scale-105 hover:border-white/25 hover:text-white"
+                  className="glass rounded-full px-4 py-2 text-sm text-foreground transition-all duration-300 hover:scale-105 hover:border-white/25 hover:text-foreground"
                 >
                   {skill}
                 </li>
@@ -95,7 +95,7 @@ export function Credentials() {
                   <Award size={20} />
                 </span>
                 <div>
-                  <h3 className="text-base font-bold text-white sm:text-lg">
+                  <h3 className="text-base font-bold text-foreground sm:text-lg">
                     {selectedCert.title}
                   </h3>
                   <p className="text-xs text-foreground/70">
@@ -106,7 +106,7 @@ export function Credentials() {
               <button
                 type="button"
                 onClick={() => setSelectedCert(null)}
-                className="rounded-xl border border-white/10 p-2 text-muted-foreground transition-colors hover:bg-white/10 hover:text-white"
+                className="rounded-xl border border-white/10 p-2 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
                 aria-label="Close modal"
               >
                 <X size={18} />
@@ -144,7 +144,7 @@ export function Credentials() {
                 href={selectedCert.fileUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-xs font-semibold text-foreground/90 transition-all hover:bg-white/10 hover:text-white"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-xs font-semibold text-foreground/90 transition-all hover:bg-white/10 hover:text-foreground"
               >
                 <ExternalLink size={14} />
                 Open Full Document
