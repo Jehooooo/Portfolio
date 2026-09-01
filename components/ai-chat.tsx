@@ -183,9 +183,9 @@ export function AiChat() {
         aria-label={isOpen ? 'Close chat' : 'Chat with Jeho'}
       >
         {isOpen ? (
-          <X size={22} className="text-white" />
+          <X size={22} />
         ) : (
-          <MessageSquare size={22} className="text-white" />
+          <MessageSquare size={22} />
         )}
       </button>
 
