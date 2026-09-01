@@ -81,7 +81,7 @@ export const projects: Project[] = [
     overview:
       'The DMMMSU-SLUC Disaster/Emergency Incident Reports Management System replaces manual, paper-based incident logging across campus grounds with an automated digital workflow. When emergencies or safety hazards occur (e.g., severe weather damage, fire hazards, facility accidents, power outages), university staff can log reports instantly. Administrators can review, assign response status, and track incidents to resolution while generating real-time analytics and standardized PDF documentation.',
     image: '/images/dmmmsu-incident.png',
-    video: '/videos/dmmmsu-incident-demo.mp4',
+    video: '/videos/0809.mp4',
     bottomVideo: '/videos/0809.mp4',
     technologies: [
       'React 18',

@@ -123,8 +123,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
               poster={project.image}
               className="h-full w-full object-cover"
             >
-              <source src={project.video} type="video/mp4" />
-              <source src="/dmmmsu-incident-demo.avi" type="video/x-msvideo" />
+              <source src={project.video || project.bottomVideo} type="video/mp4" />`n                <source src="/videos/0809.mp4" type="video/mp4" />`n                <source src="/videos/dmmmsu-incident-demo.mp4" type="video/mp4" />`n                <source src="/dmmmsu-incident-demo.avi" type="video/x-msvideo" />
               Your browser does not support the video tag.
             </video>
           ) : yt || vm ? (
@@ -290,47 +289,6 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
             </div>
           )}
         </div>
-
-        {/* System Video Walkthrough at the Bottom */}
-        {project.bottomVideo && (
-          <div className="mb-8 rounded-2xl border border-border bg-card p-5 sm:p-6">
-            <h3 className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-foreground/70 font-semibold mb-4">
-              <Play size={16} /> System Demonstration Video
-            </h3>
-            <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-black/40 shadow-inner">
-              {playingBottom ? (
-                <video
-                  autoPlay
-                  controls
-                  preload="auto"
-                  className="h-full w-full object-cover"
-                >
-                  <source src={project.bottomVideo} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setPlayingBottom(true)}
-                  aria-label="Play system demonstration video"
-                  className="group relative h-full w-full block cursor-pointer"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={project.image || '/images/placeholder.svg'}
-                    alt="System demonstration video preview"
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors group-hover:bg-black/45">
-                    <span className="flex h-16 w-16 items-center justify-center rounded-full btn-bw-primary text-white shadow-2xl transition-transform duration-200 group-hover:scale-110">
-                      <Play size={26} className="ml-1 text-white" fill="currentColor" />
-                    </span>
-                  </div>
-                </button>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Role & Links Footer */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border/60 pt-6">
