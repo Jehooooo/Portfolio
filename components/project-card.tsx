@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { ArrowUpRight, ImageOff, Play, Info } from 'lucide-react'
+import { ArrowUpRight, ImageOff, Play } from 'lucide-react'
 import { GithubIcon } from '@/components/brand-icons'
 import { cn } from '@/lib/utils'
 import type { Project } from '@/lib/portfolio-data'
@@ -65,6 +65,8 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, onSelect }: ProjectCardProps) {
+  const hasLinks = Boolean(project.liveUrl || project.githubUrl)
+
   return (
     <article
       onClick={() => onSelect?.(project)}
@@ -105,19 +107,8 @@ export function ProjectCard({ project, onSelect }: ProjectCardProps) {
           ))}
         </ul>
 
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-4">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onSelect?.(project)
-            }}
-            className="inline-flex items-center gap-1.5 rounded-lg btn-bw-primary px-3 py-2 text-xs font-semibold text-white shadow-md transition-transform duration-200 hover:scale-105 cursor-pointer"
-          >
-            <Info size={14} /> View Details
-          </button>
-
-          <div className="flex items-center gap-2">
+        {hasLinks && (
+          <div className="mt-5 flex items-center justify-end gap-2 border-t border-border/60 pt-4">
             {project.liveUrl && (
               <a
                 href={project.liveUrl}
@@ -141,7 +132,7 @@ export function ProjectCard({ project, onSelect }: ProjectCardProps) {
               </a>
             )}
           </div>
-        </div>
+        )}
       </div>
     </article>
   )
