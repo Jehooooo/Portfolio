@@ -1,6 +1,12 @@
 import { Reveal } from '@/components/reveal'
 
-const row1Skills = [
+interface SkillItem {
+  name: string
+  iconUrl: string
+  darkInvert?: boolean
+}
+
+const row1Skills: SkillItem[] = [
   {
     name: 'HTML5',
     iconUrl: 'https://cdn.simpleicons.org/html5/E34F26',
@@ -27,15 +33,16 @@ const row1Skills = [
   },
   {
     name: 'Django',
-    iconUrl: 'https://cdn.simpleicons.org/django/white',
+    iconUrl: 'https://cdn.simpleicons.org/django/092E20',
   },
   {
     name: 'Flask',
-    iconUrl: 'https://cdn.simpleicons.org/flask/white',
+    iconUrl: 'https://cdn.simpleicons.org/flask',
+    darkInvert: true,
   },
 ]
 
-const row2Skills = [
+const row2Skills: SkillItem[] = [
   {
     name: 'MongoDB',
     iconUrl: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg',
@@ -50,11 +57,13 @@ const row2Skills = [
   },
   {
     name: 'GitHub',
-    iconUrl: 'https://cdn.simpleicons.org/github/white',
+    iconUrl: 'https://cdn.simpleicons.org/github',
+    darkInvert: true,
   },
   {
     name: 'Vercel',
-    iconUrl: 'https://cdn.simpleicons.org/vercel/white',
+    iconUrl: 'https://cdn.simpleicons.org/vercel',
+    darkInvert: true,
   },
   {
     name: 'Photoshop',
@@ -129,7 +138,9 @@ export function Skills() {
                   alt={skill.name}
                   width={36}
                   height={36}
-                  className="h-8 w-8 object-contain transition-transform duration-300 group-hover:scale-110 sm:h-10 sm:w-10"
+                  className={`h-8 w-8 object-contain transition-transform duration-300 group-hover:scale-110 sm:h-10 sm:w-10 ${
+                    skill.darkInvert ? 'dark:invert' : ''
+                  }`}
                   loading="lazy"
                 />
               </div>
@@ -151,7 +162,9 @@ export function Skills() {
                   alt={skill.name}
                   width={36}
                   height={36}
-                  className="h-8 w-8 object-contain transition-transform duration-300 group-hover:scale-110 sm:h-10 sm:w-10"
+                  className={`h-8 w-8 object-contain transition-transform duration-300 group-hover:scale-110 sm:h-10 sm:w-10 ${
+                    skill.darkInvert ? 'dark:invert' : ''
+                  }`}
                   loading="lazy"
                 />
               </div>
