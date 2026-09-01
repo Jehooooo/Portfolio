@@ -5,6 +5,8 @@ import { FileText, Mail, Phone, Send, CheckCircle2, AlertCircle, Loader2, Shield
 import { Reveal } from '@/components/reveal'
 import { profile } from '@/lib/portfolio-data'
 
+const INITIAL_CHALLENGE = { question: '3 + 4', answer: 7 }
+
 /** Generates a simple integer math challenge */
 function generateChallenge(): { question: string; answer: number } {
   const ops = ['+', '-', '*'] as const
@@ -36,16 +38,22 @@ export function Contact() {
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [emailError, setEmailError] = useState('')
 
-  // Bot protection: timing token (set when form mounts)
-  const formOpenedAt = useRef<number>(Date.now())
+  // Bot protection: timing token (set when form mounts on client)
+  const formOpenedAt = useRef<number>(0)
 
-  // Bot protection: math CAPTCHA
-  const [challenge, setChallenge] = useState<{ question: string; answer: number }>(() => generateChallenge())
+  // Bot protection: math CAPTCHA (initialized with deterministic constant to prevent SSR hydration mismatch)
+  const [challenge, setChallenge] = useState<{ question: string; answer: number }>(INITIAL_CHALLENGE)
   const [captchaInput, setCaptchaInput] = useState('')
   const [captchaError, setCaptchaError] = useState('')
 
   // Bot protection: honeypot (visually hidden, real users never fill this)
   const [honeypot, setHoneypot] = useState('')
+
+  // Client-side initialization after mount to generate random challenge safely
+  useEffect(() => {
+    setChallenge(generateChallenge())
+    formOpenedAt.current = Date.now()
+  }, [])
 
   // Refresh CAPTCHA challenge on every failed submit
   const refreshChallenge = () => {
@@ -73,7 +81,7 @@ export function Contact() {
     }
 
     // 2. Timing check (bots submit in < 1.5 seconds)
-    const elapsedMs = Date.now() - formOpenedAt.current
+    const elapsedMs = formOpenedAt.current > 0 ? Date.now() - formOpenedAt.current : 2000
     if (elapsedMs < 1500) {
       setStatusMessage({ type: 'error', text: 'Submission too fast. Please try again.' })
       return
