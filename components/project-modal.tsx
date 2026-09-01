@@ -71,8 +71,8 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
 
       {/* Modal Dialog Content */}
       <div className="glass-strong relative z-10 my-auto w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-5 sm:p-8 shadow-2xl border border-border">
-        {/* Sticky Header Close Button */}
-        <div className="sticky top-0 z-20 -mx-5 -mt-5 mb-5 flex items-center justify-between border-b border-border/60 bg-background/95 px-5 py-3.5 backdrop-blur-md sm:-mx-8 sm:-mt-8 sm:mb-6 sm:px-8 sm:py-4">
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-20 -mx-5 -mt-5 flex items-center justify-between border-b border-border/60 bg-background/95 px-5 py-4 backdrop-blur-md sm:-mx-8 sm:-mt-8 sm:px-8">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="rounded-full bg-card px-3 py-1 font-mono text-xs font-semibold text-foreground/80 border border-border">
               {project.status}
@@ -92,13 +92,15 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
           </button>
         </div>
 
-        {/* Prominent Role Badge */}
-        <div className="mb-3.5">
-          <div className="inline-flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-1.5 font-mono text-xs shadow-xs">
-            <span className="font-bold text-muted-foreground uppercase tracking-wider">ROLE:</span>
-            <span className="font-semibold text-foreground">{project.role}</span>
+        {/* Modal Body Container with proper top spacing */}
+        <div className="pt-6 sm:pt-8">
+          {/* Prominent Role Badge */}
+          <div className="mb-4">
+            <div className="inline-flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-1.5 font-mono text-xs shadow-xs">
+              <span className="font-bold text-muted-foreground uppercase tracking-wider">ROLE:</span>
+              <span className="font-semibold text-foreground">{project.role}</span>
+            </div>
           </div>
-        </div>
 
         {/* Title & Subtitle */}
         <div className="mb-6">
@@ -407,6 +409,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
               </a>
             )}
           </div>
+        </div>
         </div>
       </div>
     </div>
