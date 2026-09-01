@@ -26,6 +26,37 @@ app.config.update(
 )
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# In-Memory Rate Limiter for Python Flask Backend
+# ---------------------------------------------------------------------------
+_rate_limit_store = {}
+_rate_limit_lock = threading.Lock()
+
+def check_backend_rate_limit(key: str, limit: int, window_seconds: int = 60) -> tuple[bool, int]:
+    """Sliding-window rate limiter per client key (IP or session)."""
+    now = datetime.now(timezone.utc).timestamp()
+    window_start = now - window_seconds
+
+    with _rate_limit_lock:
+        if key not in _rate_limit_store:
+            _rate_limit_store[key] = []
+
+        # Filter active timestamps
+        _rate_limit_store[key] = [ts for ts in _rate_limit_store[key] if ts > window_start]
+
+        if len(_rate_limit_store[key]) >= limit:
+            oldest = _rate_limit_store[key][0]
+            retry_after = max(int(oldest + window_seconds - now), 1)
+            return False, retry_after
+
+        _rate_limit_store[key].append(now)
+        return True, 0
+
+def get_client_ip(req) -> str:
+    if req.headers.get('X-Forwarded-For'):
+        return req.headers.get('X-Forwarded-For').split(',')[0].strip()
+    return req.remote_addr or '127.0.0.1'
+
 # Candidate Gemini models - ordered by availability & active quota
 # ---------------------------------------------------------------------------
 CANDIDATE_MODELS = [
@@ -88,6 +119,16 @@ def health_check():
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
+    # Rate Limiting: 25 requests per minute per IP (Admin bypasses)
+    if not check_admin_auth(request):
+        client_ip = get_client_ip(request)
+        allowed, retry_after = check_backend_rate_limit(f"chat:{client_ip}", limit=25, window_seconds=60)
+        if not allowed:
+            print(f"[RateLimit] 🛑 Chat rate limit hit for IP: {client_ip}. Retry in {retry_after}s.")
+            return jsonify({
+                "error": f"Too many chat requests. Please slow down and try again in {retry_after} seconds."
+            }), 429
+
     try:
         data = request.get_json() or {}
         session_id = data.get("session_id", "anonymous-session")

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import dns from 'dns/promises'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 
 // Known disposable / burner email domains
 const DISPOSABLE_DOMAINS = new Set([
@@ -82,6 +83,23 @@ function analyzeEmailAuthenticity(email: string): { valid: boolean; reason?: str
 }
 
 export async function POST(req: Request) {
+  // Rate Limiter: Max 5 submissions per 10 minutes per IP
+  const clientIp = getClientIp(req)
+  const rateLimit = checkRateLimit(`contact:${clientIp}`, 5, 10 * 60 * 1000)
+
+  if (!rateLimit.allowed) {
+    console.warn(`[RATE LIMIT] 🛑 Contact rate limit exceeded for IP: ${clientIp}. Try again in ${rateLimit.resetTime}s.`)
+    return NextResponse.json(
+      {
+        error: `Too many contact submissions. Please wait ${rateLimit.resetTime} seconds before sending another message.`,
+      },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(rateLimit.resetTime) },
+      },
+    )
+  }
+
   const timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' })
 
   console.log('\n' + '='.repeat(60))

@@ -1,8 +1,20 @@
-﻿import { GoogleGenAI } from '@google/genai'
+import { GoogleGenAI } from '@google/genai'
 import { getSystemInstruction } from '@/lib/jehosue-knowledge'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 
 export async function POST(request: Request) {
   try {
+    // Rate Limiter: Max 25 requests per minute per IP
+    const clientIp = getClientIp(request)
+    const rateLimit = checkRateLimit(`chat:${clientIp}`, 25, 60 * 1000)
+
+    if (!rateLimit.allowed) {
+      return Response.json(
+        { error: `Too many chat requests. Please slow down and try again in ${rateLimit.resetTime}s.` },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.resetTime) } },
+      )
+    }
+
     const body = await request.json()
     const { session_id, messages } = body
 
@@ -10,7 +22,7 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Messages are required' }, { status: 400 })
     }
 
-    // 1. Try forwarding request to Python Flask backend (which stores to MongoDB & processes knowledge)
+    // 1. Try forwarding request to Python Flask backend
     const pythonBackendUrl = process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:5000'
     try {
       const pyRes = await fetch(`${pythonBackendUrl}/api/chat`, {
@@ -125,4 +137,3 @@ export async function POST(request: Request) {
     )
   }
 }
-
