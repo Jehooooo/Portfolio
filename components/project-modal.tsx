@@ -15,7 +15,7 @@ import {
   Play,
 } from 'lucide-react'
 import { GithubIcon } from '@/components/brand-icons'
-import type { Project } from '@/lib/portfolio-data'
+import type { Project, FeatureDetail } from '@/lib/portfolio-data'
 
 interface ProjectModalProps {
   project: Project | null
@@ -214,7 +214,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
             <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
               {project.workflow.map((item, idx) => (
                 <div
-                  key={item.step}
+                  key={`workflow-${item.step}-${idx}`}
                   className="relative flex flex-col rounded-2xl border border-border bg-card p-4 transition-all duration-200 hover:border-foreground/30"
                 >
                   <div className="flex items-center justify-between gap-2 mb-2">
@@ -244,18 +244,18 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
               <Layers size={16} /> 2. Core System Architecture Breakdown
             </h3>
             <div className="grid gap-4 md:grid-cols-3">
-              {project.architecture.map((arch) => (
+              {project.architecture.map((arch, idx) => (
                 <div
-                  key={arch.layer}
+                  key={`arch-${arch.layer}-${idx}`}
                   className="rounded-2xl border border-border bg-card p-5"
                 >
                   <span className="font-mono text-xs font-bold uppercase tracking-wider text-foreground/70">
                     {arch.layer}
                   </span>
                   <ul className="mt-3 space-y-2">
-                    {arch.items.map((it) => (
+                    {arch.items.map((it, itIdx) => (
                       <li
-                        key={it}
+                        key={`arch-item-${idx}-${itIdx}`}
                         className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground"
                       >
                         <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/60" />
@@ -276,9 +276,9 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
               <Database size={16} /> 3. Relational Database Design & Entities
             </h3>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {project.databaseSchema.map((table) => (
+              {project.databaseSchema.map((table, idx) => (
                 <div
-                  key={table.tableName}
+                  key={`table-${table.tableName}-${idx}`}
                   className="rounded-xl border border-border bg-card p-4 font-mono text-xs"
                 >
                   <div className="flex items-center justify-between border-b border-border pb-2 mb-2 font-bold text-foreground">
@@ -307,17 +307,41 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
               <Sparkles size={16} /> 4. Key Functional Features & Automation
             </h3>
             <div className="grid gap-3 sm:grid-cols-2">
-              {project.features.map((feat) => (
-                <div
-                  key={feat}
-                  className="flex items-start gap-3 rounded-xl border border-border bg-card p-3.5"
-                >
-                  <ArrowRight size={15} className="mt-0.5 shrink-0 text-foreground/60" />
-                  <span className="text-xs leading-relaxed text-muted-foreground">
-                    {feat}
-                  </span>
-                </div>
-              ))}
+              {project.features.map((feat: string | FeatureDetail, idx: number) => {
+                const isObj = typeof feat === 'object' && feat !== null
+                const title = isObj ? (feat as FeatureDetail).title : String(feat)
+                const key = `feature-${idx}-${title.slice(0, 20)}`
+
+                return (
+                  <div
+                    key={key}
+                    className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-foreground/30"
+                  >
+                    <ArrowRight size={16} className="mt-0.5 shrink-0 text-foreground/60" />
+                    <div className="flex-1 text-xs leading-relaxed text-muted-foreground">
+                      {isObj ? (
+                        <>
+                          <span className="font-semibold text-foreground text-sm block mb-1.5">
+                            {(feat as FeatureDetail).title}
+                          </span>
+                          {(feat as FeatureDetail).details && (
+                            <ul className="space-y-1.5 mt-1">
+                              {(feat as FeatureDetail).details.map((d: string, dIdx: number) => (
+                                <li key={`detail-${idx}-${dIdx}`} className="flex items-start gap-2 text-muted-foreground">
+                                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/40" />
+                                  <span>{d}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-foreground/90 font-medium">{String(feat)}</span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
@@ -329,8 +353,8 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
               <Shield size={16} /> 5. Security & Authentication Guardrails
             </h3>
             <div className="grid gap-2.5 sm:grid-cols-2">
-              {project.security.map((sec) => (
-                <div key={sec} className="flex items-center gap-2.5 text-xs text-muted-foreground">
+              {project.security.map((sec, idx) => (
+                <div key={`sec-${idx}-${sec}`} className="flex items-center gap-2.5 text-xs text-muted-foreground">
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/60" />
                   <span>{sec}</span>
                 </div>
@@ -346,9 +370,9 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
               Full Technology Stack Breakdown
             </h3>
             <div className="grid gap-2.5 sm:grid-cols-2 md:grid-cols-3">
-              {project.detailedTech.map((t) => (
+              {project.detailedTech.map((t, idx) => (
                 <div
-                  key={t.category}
+                  key={`tech-${idx}-${t.category}-${t.tech}`}
                   className="flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-2.5 font-mono text-xs"
                 >
                   <span className="text-muted-foreground">{t.category}</span>
