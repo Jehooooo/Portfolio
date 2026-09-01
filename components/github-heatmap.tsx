@@ -107,8 +107,8 @@ export function GitHubHeatmap({ username }: { username: string }) {
   const monthLabels = getMonthLabels(displayWeeks)
 
   // Layout coordinates for SVG
-  const BOX_SIZE = 10
-  const BOX_GAP = 2.5
+  const BOX_SIZE = 11.5
+  const BOX_GAP = 2.8
   const STEP = BOX_SIZE + BOX_GAP
   const LEFT_PADDING = 24
   const TOP_PADDING = 18
