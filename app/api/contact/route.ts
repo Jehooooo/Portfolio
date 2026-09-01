@@ -109,11 +109,22 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { name, email, message, _honeypot } = body
 
-    // 0. Bot Trap (Honeypot)
+    // 0a. Bot Trap (Honeypot) - bots fill hidden fields
     if (_honeypot && typeof _honeypot === 'string' && _honeypot.trim().length > 0) {
-      console.warn('[SECURITY ALERT] 🛑 Bot honeypot triggered. Silently ignored.')
+      console.warn('[BOT GUARD] 🛑 Honeypot triggered. Silently dropping request.')
       console.log('='.repeat(60) + '\n')
       return NextResponse.json({ success: true, message: 'Message received.' })
+    }
+
+    // 0b. Timing Check - bots submit too fast (< 1.5 seconds)
+    const formLoadedAt = body._formLoadedAt ? Number(body._formLoadedAt) : 0
+    if (formLoadedAt > 0) {
+      const elapsedMs = Date.now() - formLoadedAt
+      if (elapsedMs < 1500) {
+        console.warn(`[BOT GUARD] 🛑 Submission too fast (${elapsedMs}ms). Likely a bot.`)
+        console.log('='.repeat(60) + '\n')
+        return NextResponse.json({ error: 'Submission too fast. Please try again.' }, { status: 400 })
+      }
     }
 
     console.log(`[CONTACT API] Name:    ${name}`)

@@ -1,9 +1,32 @@
 'use client'
 
-import { useState } from 'react'
-import { FileText, Mail, Phone, Send, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { FileText, Mail, Phone, Send, CheckCircle2, AlertCircle, Loader2, ShieldCheck } from 'lucide-react'
 import { Reveal } from '@/components/reveal'
 import { profile } from '@/lib/portfolio-data'
+
+/** Generates a simple integer math challenge */
+function generateChallenge(): { question: string; answer: number } {
+  const ops = ['+', '-', '*'] as const
+  const op = ops[Math.floor(Math.random() * ops.length)]
+  let a: number, b: number, answer: number
+
+  if (op === '+') {
+    a = Math.floor(Math.random() * 12) + 1
+    b = Math.floor(Math.random() * 12) + 1
+    answer = a + b
+  } else if (op === '-') {
+    a = Math.floor(Math.random() * 12) + 4
+    b = Math.floor(Math.random() * (a - 1)) + 1
+    answer = a - b
+  } else {
+    a = Math.floor(Math.random() * 9) + 2
+    b = Math.floor(Math.random() * 5) + 2
+    answer = a * b
+  }
+
+  return { question: `${a} ${op} ${b}`, answer }
+}
 
 export function Contact() {
   const [name, setName] = useState('')
@@ -13,14 +36,28 @@ export function Contact() {
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [emailError, setEmailError] = useState('')
 
+  // Bot protection: timing token (set when form mounts)
+  const formOpenedAt = useRef<number>(Date.now())
+
+  // Bot protection: math CAPTCHA
+  const [challenge, setChallenge] = useState<{ question: string; answer: number }>(() => generateChallenge())
+  const [captchaInput, setCaptchaInput] = useState('')
+  const [captchaError, setCaptchaError] = useState('')
+
+  // Bot protection: honeypot (visually hidden, real users never fill this)
+  const [honeypot, setHoneypot] = useState('')
+
+  // Refresh CAPTCHA challenge on every failed submit
+  const refreshChallenge = () => {
+    setChallenge(generateChallenge())
+    setCaptchaInput('')
+    setCaptchaError('')
+  }
+
   const validateEmail = (val: string) => {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-    if (!val.trim()) {
-      return 'Email address is required.'
-    }
-    if (!emailRegex.test(val.trim())) {
-      return 'Please enter a valid email address (e.g. name@example.com).'
-    }
+    if (!val.trim()) return 'Email address is required.'
+    if (!emailRegex.test(val.trim())) return 'Please enter a valid email address (e.g. name@example.com).'
     return ''
   }
 
@@ -28,7 +65,29 @@ export function Contact() {
     e.preventDefault()
     setStatusMessage(null)
 
-    // Form Validation
+    // 1. Honeypot check (filled only by bots)
+    if (honeypot.trim().length > 0) {
+      // Silently succeed for bots so they don't retry
+      setStatusMessage({ type: 'success', text: 'Your message has been sent to Jeho!' })
+      return
+    }
+
+    // 2. Timing check (bots submit in < 1.5 seconds)
+    const elapsedMs = Date.now() - formOpenedAt.current
+    if (elapsedMs < 1500) {
+      setStatusMessage({ type: 'error', text: 'Submission too fast. Please try again.' })
+      return
+    }
+
+    // 3. Math CAPTCHA check
+    const userAnswer = parseInt(captchaInput.trim(), 10)
+    if (isNaN(userAnswer) || userAnswer !== challenge.answer) {
+      setCaptchaError(`Incorrect answer. Please solve: ${challenge.question} = ?`)
+      refreshChallenge()
+      return
+    }
+
+    // 4. Form field validation
     if (!name.trim()) {
       setStatusMessage({ type: 'error', text: 'Please enter your name.' })
       return
@@ -53,12 +112,19 @@ export function Contact() {
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, message }),
+        body: JSON.stringify({
+          name,
+          email,
+          message,
+          _honeypot: honeypot,
+          _formLoadedAt: formOpenedAt.current,
+        }),
       })
 
       const data = await res.json()
 
       if (!res.ok) {
+        refreshChallenge()
         throw new Error(data.error || 'Failed to send message.')
       }
 
@@ -69,6 +135,9 @@ export function Contact() {
       setName('')
       setEmail('')
       setMessage('')
+      setCaptchaInput('')
+      refreshChallenge()
+      formOpenedAt.current = Date.now()
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'An error occurred while sending your message. Please try again.'
       setStatusMessage({ type: 'error', text: msg })
@@ -117,6 +186,20 @@ export function Contact() {
             onSubmit={handleSubmit}
             className="mx-auto mt-8 max-w-xl text-left space-y-4"
           >
+            {/* Bot Honeypot - visually hidden, only bots fill this */}
+            <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
+              <label htmlFor="contact-website">Website</label>
+              <input
+                id="contact-website"
+                name="website"
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+              />
+            </div>
+
             {/* Status Alert Banner */}
             {statusMessage && (
               <div
@@ -152,7 +235,7 @@ export function Contact() {
               />
             </div>
 
-            {/* Email Input with validation */}
+            {/* Email Input */}
             <div>
               <label htmlFor="contact-email" className="block text-xs font-semibold text-foreground/90 uppercase tracking-wider mb-1.5">
                 Email Address
@@ -202,7 +285,41 @@ export function Contact() {
               />
             </div>
 
-            {/* Actions: Submit Button & Direct Links */}
+            {/* Math CAPTCHA */}
+            <div className="rounded-xl border border-border bg-card/50 p-4 space-y-2">
+              <div className="flex items-center gap-2 mb-1">
+                <ShieldCheck size={14} className="text-foreground/60" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Bot Protection</span>
+              </div>
+              <label htmlFor="contact-captcha" className="block text-sm text-muted-foreground">
+                Solve to verify you&apos;re human:&nbsp;
+                <span className="font-bold text-foreground font-mono">{challenge.question} = ?</span>
+              </label>
+              <input
+                id="contact-captcha"
+                type="number"
+                value={captchaInput}
+                onChange={(e) => {
+                  setCaptchaInput(e.target.value)
+                  if (captchaError) setCaptchaError('')
+                }}
+                placeholder="Your answer"
+                disabled={loading}
+                className={`w-32 rounded-lg border bg-card/70 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors focus:ring-1 ${
+                  captchaError
+                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                    : 'border-border focus:border-foreground focus:ring-foreground'
+                }`}
+              />
+              {captchaError && (
+                <p className="text-[11px] text-red-600 dark:text-red-400 flex items-center gap-1">
+                  <AlertCircle size={12} />
+                  <span>{captchaError}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Actions */}
             <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <button
                 type="submit"
