@@ -66,9 +66,9 @@ const row2Skills = [
   },
 ]
 
-// Duplicate each row for continuous 100% infinite marquee loop
-const marqueeRow1 = [...row1Skills, ...row1Skills]
-const marqueeRow2 = [...row2Skills, ...row2Skills]
+// Duplicate 4 times for a truly seamless, continuous infinite loop on all screen sizes
+const marqueeRow1 = [...row1Skills, ...row1Skills, ...row1Skills, ...row1Skills]
+const marqueeRow2 = [...row2Skills, ...row2Skills, ...row2Skills, ...row2Skills]
 
 export function Skills() {
   return (
@@ -84,7 +84,7 @@ export function Skills() {
         .marquee-track-left {
           display: flex !important;
           width: max-content !important;
-          animation: marqueeLeftDirect 20s linear infinite !important;
+          animation: marqueeLeftDirect 25s linear infinite !important;
           will-change: transform;
         }
         .marquee-track-left:hover {
@@ -98,7 +98,7 @@ export function Skills() {
         .marquee-track-right {
           display: flex !important;
           width: max-content !important;
-          animation: marqueeRightDirect 20s linear infinite !important;
+          animation: marqueeRightDirect 25s linear infinite !important;
           will-change: transform;
         }
         .marquee-track-right:hover {
@@ -106,20 +106,14 @@ export function Skills() {
         }
       `}</style>
 
-      {/* Header section matching mockup */}
+      {/* Header section */}
       <div className="flex items-center justify-between">
         <p className="font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground/80">
           TECH STACK
         </p>
-        <a
-          href="#projects"
-          className="font-mono text-xs text-muted-foreground/60 transition-colors hover:text-foreground"
-        >
-          View All &rarr;
-        </a>
       </div>
 
-      {/* Two-Row Marquee Stack matching screenshot */}
+      {/* Two-Row Marquee Stack */}
       <Reveal delay={100} className="mt-8 space-y-4 overflow-hidden">
         {/* Upper Row (Moving right to left) */}
         <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
@@ -128,7 +122,7 @@ export function Skills() {
               <div
                 key={`row1-${skill.name}-${index}`}
                 title={skill.name}
-                className="group relative mx-2 flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-[#111111] shadow-md transition-all duration-300 hover:scale-110 hover:-translate-y-1 hover:border-white/30 hover:bg-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] sm:h-20 sm:w-20"
+                className="group relative mx-2 flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 hover:scale-110 hover:-translate-y-1 hover:border-foreground/30 hover:shadow-md sm:h-20 sm:w-20"
               >
                 <img
                   src={skill.iconUrl}
@@ -150,7 +144,7 @@ export function Skills() {
               <div
                 key={`row2-${skill.name}-${index}`}
                 title={skill.name}
-                className="group relative mx-2 flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-[#111111] shadow-md transition-all duration-300 hover:scale-110 hover:-translate-y-1 hover:border-white/30 hover:bg-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] sm:h-20 sm:w-20"
+                className="group relative mx-2 flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 hover:scale-110 hover:-translate-y-1 hover:border-foreground/30 hover:shadow-md sm:h-20 sm:w-20"
               >
                 <img
                   src={skill.iconUrl}
