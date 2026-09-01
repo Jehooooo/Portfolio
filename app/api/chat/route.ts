@@ -1,26 +1,108 @@
 import { GoogleGenAI } from '@google/genai'
 import { getSystemInstruction } from '@/lib/jehosue-knowledge'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import {
+  validateRequestHeaders,
+  validateSessionId,
+  validateString,
+  escapeHtml,
+  trimApiResponse,
+} from '@/lib/security'
 
 export async function POST(request: Request) {
   try {
+    // 16. Restrict File Uploads & Validate Content-Type / Size (Max 64 KB)
+    const headerCheck = validateRequestHeaders(request, 64 * 1024)
+    if (!headerCheck.valid) {
+      return Response.json(
+        trimApiResponse({ error: headerCheck.error }),
+        { status: headerCheck.status || 400 },
+      )
+    }
+
     // Rate Limiter: Max 25 requests per minute per IP
     const clientIp = getClientIp(request)
     const rateLimit = checkRateLimit(`chat:${clientIp}`, 25, 60 * 1000)
 
     if (!rateLimit.allowed) {
       return Response.json(
-        { error: `Too many chat requests. Please slow down and try again in ${rateLimit.resetTime}s.` },
+        trimApiResponse({
+          error: `Too many chat requests. Please slow down and try again in ${rateLimit.resetTime}s.`,
+        }),
         { status: 429, headers: { 'Retry-After': String(rateLimit.resetTime) } },
       )
     }
 
-    const body = await request.json()
-    const { session_id, messages } = body
-
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return Response.json({ error: 'Messages are required' }, { status: 400 })
+    let body: Record<string, unknown>
+    try {
+      body = await request.json()
+    } catch {
+      return Response.json(
+        trimApiResponse({ error: 'Malformed JSON payload.' }),
+        { status: 400 },
+      )
     }
+
+    // 14. Validate all inputs
+    const rawSessionId = body.session_id
+    const sessionId = validateSessionId(rawSessionId)
+
+    const rawMessages = body.messages
+    if (!rawMessages || !Array.isArray(rawMessages) || rawMessages.length === 0) {
+      return Response.json(
+        trimApiResponse({ error: 'A valid array of conversation messages is required.' }),
+        { status: 400 },
+      )
+    }
+
+    if (rawMessages.length > 50) {
+      return Response.json(
+        trimApiResponse({ error: 'Conversation history exceeds maximum permitted length (50 messages).' }),
+        { status: 400 },
+      )
+    }
+
+    // Sanitize and validate every message object in the history
+    const validatedMessages: Array<{ role: 'user' | 'model'; content: string }> = []
+    for (let i = 0; i < rawMessages.length; i++) {
+      const item = rawMessages[i]
+      if (!item || typeof item !== 'object') continue
+
+      const roleValidation = validateString(item.role, {
+        required: true,
+        allowedValues: ['user', 'assistant', 'model'],
+      })
+      const contentValidation = validateString(item.content, {
+        required: true,
+        minLength: 1,
+        maxLength: 4000,
+      })
+
+      if (!contentValidation.valid || !contentValidation.sanitized) {
+        if (i === rawMessages.length - 1) {
+          return Response.json(
+            trimApiResponse({ error: 'The latest message cannot be empty or exceed 4,000 characters.' }),
+            { status: 400 },
+          )
+        }
+        continue
+      }
+
+      const role = roleValidation.sanitized === 'user' ? 'user' : 'model'
+      validatedMessages.push({
+        role,
+        content: contentValidation.sanitized,
+      })
+    }
+
+    if (validatedMessages.length === 0) {
+      return Response.json(
+        trimApiResponse({ error: 'At least one valid message is required.' }),
+        { status: 400 },
+      )
+    }
+
+    const lastMessage = validatedMessages[validatedMessages.length - 1].content
 
     // 1. Try forwarding request to Python Flask backend
     const pythonBackendUrl = process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:5000'
@@ -29,25 +111,23 @@ export async function POST(request: Request) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          session_id: session_id || 'anonymous-session',
-          messages,
+          session_id: sessionId,
+          messages: validatedMessages,
         }),
         signal: AbortSignal.timeout(15000),
       })
 
       if (pyRes.ok) {
         const pyData = await pyRes.json()
-        if (pyData.response) {
-          return new Response(pyData.response, {
+        if (pyData.response && typeof pyData.response === 'string') {
+          // 17. Trim API response string
+          return new Response(pyData.response.trim(), {
             headers: { 'Content-Type': 'text/plain; charset=utf-8' },
           })
         }
-      } else {
-        const errorText = await pyRes.text()
-        console.warn(`[Next.js Chat Route] Python backend returned ${pyRes.status}: ${errorText}`)
       }
-    } catch (pyErr) {
-      console.warn(`[Next.js Chat Route] Python backend unreachable (${pyErr}), falling back to direct Gemini.`)
+    } catch {
+      // Fallback silently to direct Gemini
     }
 
     // 2. Direct Gemini streaming fallback if Python backend is offline
@@ -55,19 +135,18 @@ export async function POST(request: Request) {
 
     if (!apiKey || apiKey === 'your_api_key_here' || apiKey.trim() === '') {
       return Response.json(
-        { error: 'Gemini API key not configured' },
-        { status: 500 },
+        trimApiResponse({ error: 'Gemini AI service is not configured.' }),
+        { status: 503 },
       )
     }
 
     const genAI = new GoogleGenAI({ apiKey })
 
-    const geminiHistory = messages.slice(0, -1).map((msg: { role: string; content: string }) => ({
-      role: msg.role === 'user' ? 'user' : 'model',
+    const geminiHistory = validatedMessages.slice(0, -1).map((msg) => ({
+      role: msg.role,
       parts: [{ text: msg.content }],
     }))
 
-    const lastMessage = messages[messages.length - 1].content
     const systemInstruction = getSystemInstruction()
 
     const candidateModels = [
@@ -98,12 +177,14 @@ export async function POST(request: Request) {
         break
       } catch (err) {
         lastErr = err
-        console.warn(`Model ${model} unavailable in Next.js fallback, trying next...`)
       }
     }
 
     if (!response) {
-      throw lastErr || new Error('No available Gemini model responded')
+      return Response.json(
+        trimApiResponse({ error: 'AI service temporarily unavailable. Please try again in a few moments.' }),
+        { status: 503 },
+      )
     }
 
     const encoder = new TextEncoder()
@@ -129,10 +210,9 @@ export async function POST(request: Request) {
         'Transfer-Encoding': 'chunked',
       },
     })
-  } catch (error) {
-    console.error('Chat API error:', error)
+  } catch {
     return Response.json(
-      { error: 'Failed to generate response' },
+      trimApiResponse({ error: 'An unexpected error occurred while processing your request.' }),
       { status: 500 },
     )
   }

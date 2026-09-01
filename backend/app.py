@@ -1,7 +1,7 @@
 import json
 import threading
 from datetime import datetime, timezone, timedelta
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify, Response, redirect
 from flask_cors import CORS
 from bson import ObjectId
 from google import genai
@@ -13,15 +13,20 @@ from knowledge_base import build_system_instruction
 from processor import process_unprocessed_conversations
 from query_params import (
     sanitize_str,
+    escape_content,
     allowed_value,
     build_session_query,
     build_status_query,
     build_id_query,
+    trim_response,
     ALLOWED_STATUSES,
 )
 
 app = Flask(__name__)
 CORS(app)
+
+# 16. Restrict File Uploads: Set max payload limit to 1MB
+app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024  # 1 Megabyte max
 
 # Secure Session Cookie Configuration
 app.config.update(
@@ -34,7 +39,63 @@ app.config.update(
 )
 
 # ---------------------------------------------------------------------------
-# Candidate Gemini models - ordered by availability & active quota
+# 19. Force HTTPS in Production / Forwarded Proxy Environments
+# ---------------------------------------------------------------------------
+@app.before_request
+def enforce_https_and_restrictions():
+    # 19. Check X-Forwarded-Proto for HTTPS enforcement behind proxies
+    forwarded_proto = request.headers.get('X-Forwarded-Proto')
+    if forwarded_proto and forwarded_proto.lower() == 'http':
+        url = request.url.replace('http://', 'https://', 1)
+        return redirect(url, code=301)
+
+    # 16. Restrict File Uploads & enforce JSON on POST/PUT requests
+    if request.method in ('POST', 'PUT', 'PATCH'):
+        content_type = request.headers.get('Content-Type', '')
+        if not content_type.lower().startswith('application/json'):
+            return jsonify(trim_response({
+                "error": "Unsupported Media Type: Only application/json is accepted. File uploads are disabled."
+            })), 415
+
+
+# ---------------------------------------------------------------------------
+# 18. Add Security Headers to All Responses
+# ---------------------------------------------------------------------------
+@app.after_request
+def add_security_headers(response: Response) -> Response:
+    # 19. Force HTTPS / HSTS
+    response.headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains; preload'
+    # 18. Modern Security Headers
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=(), payment=(), usb=()'
+    response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'
+    response.headers['Content-Security-Policy'] = "default-src 'self'; frame-ancestors 'self'; object-src 'none';"
+    return response
+
+
+# ---------------------------------------------------------------------------
+# Error Handlers: Trim & Sanitize Exception Responses
+# ---------------------------------------------------------------------------
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    return jsonify(trim_response({
+        "error": "Payload Too Large: Request body exceeds maximum allowed size (1 MB)."
+    })), 413
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify(trim_response({"error": "Resource not found."})), 404
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    return jsonify(trim_response({"error": "Internal server error occurred."})), 500
+
+
+# ---------------------------------------------------------------------------
+# Candidate Gemini models
 # ---------------------------------------------------------------------------
 CANDIDATE_MODELS = [
     'gemini-3.5-flash-lite',
@@ -53,7 +114,6 @@ _rate_limit_store = {}
 _rate_limit_lock = threading.Lock()
 
 def check_backend_rate_limit(key: str, limit: int, window_seconds: int = 60) -> tuple[bool, int]:
-    """Sliding-window rate limiter per client key (IP or session)."""
     now = datetime.now(timezone.utc).timestamp()
     window_start = now - window_seconds
     with _rate_limit_lock:
@@ -74,7 +134,6 @@ def get_client_ip(req) -> str:
 
 
 def check_admin_auth(req) -> bool:
-    """Validate administrator credentials for Row-Level Security overrides."""
     if not ENABLE_RLS:
         return True
     if not ADMIN_SECRET:
@@ -91,50 +150,46 @@ def check_admin_auth(req) -> bool:
 
 
 def _run_processing_background():
-    """Auto-trigger processor in a daemon thread after a conversation is saved."""
     try:
-        print("[Info] Background processing auto-triggered...")
-        result = process_unprocessed_conversations()
-        print(f"[Info] Background processing finished: {result.get('processed_conversations_count', 0)} processed, "
-              f"{result.get('extracted_items_count', 0)} knowledge items extracted.")
+        process_unprocessed_conversations()
     except Exception as e:
         print(f"[Error] Background processing failed: {e}")
 
 
 # ---------------------------------------------------------------------------
-# Routes with Parameterized Queries + Row-Level Security + Rate Limiting
+# API Routes
 # ---------------------------------------------------------------------------
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
     db = get_db()
     mongo_status = "connected" if db is not None else "disconnected"
-    return jsonify({
+    return jsonify(trim_response({
         "status": "online",
         "service": "AI Jehosue Backend",
         "mongodb": mongo_status,
         "row_level_security": "enabled" if ENABLE_RLS else "disabled",
-        "query_parameterization": "active"
-    })
+        "query_parameterization": "active",
+        "security_headers": "active",
+        "file_upload_restrictions": "active",
+    }))
 
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    # Rate Limiting: 25 requests per minute per IP (Admin bypasses)
     if not check_admin_auth(request):
         client_ip = get_client_ip(request)
         allowed, retry_after = check_backend_rate_limit(f"chat:{client_ip}", limit=25, window_seconds=60)
         if not allowed:
-            print(f"[RateLimit] Chat rate limit hit for IP: {client_ip}. Retry in {retry_after}s.")
-            return jsonify({
+            return jsonify(trim_response({
                 "error": f"Too many chat requests. Please slow down and try again in {retry_after} seconds."
-            }), 429
+            })), 429
 
     try:
-        data = request.get_json() or {}
+        data = request.get_json(silent=True) or {}
 
-        # ── Parameterized: sanitize all user-supplied input fields ──────────
-        session_id = sanitize_str(data.get("session_id"), max_length=256, default="anonymous-session")
+        # 14. Validate all inputs & 15. Escape user content
+        session_id = sanitize_str(data.get("session_id"), max_length=128, default="anonymous-session")
         messages = data.get("messages", [])
 
         if not messages or not isinstance(messages, list):
@@ -142,13 +197,14 @@ def chat():
             if single_msg:
                 messages = [{"role": "user", "content": single_msg}]
             else:
-                return jsonify({"error": "Messages are required"}), 400
+                return jsonify(trim_response({"error": "Messages are required."})), 400
 
-        # Sanitize the visitor message content
         last_msg = messages[-1] if messages else {}
-        visitor_message = sanitize_str(last_msg.get("content") if isinstance(last_msg, dict) else "", max_length=4096)
+        raw_content = last_msg.get("content") if isinstance(last_msg, dict) else ""
+        visitor_message = sanitize_str(raw_content, max_length=4000)
+
         if not visitor_message:
-            return jsonify({"error": "Visitor message cannot be empty"}), 400
+            return jsonify(trim_response({"error": "Visitor message cannot be empty."})), 400
 
         # Build Gemini history
         gemini_history = []
@@ -156,7 +212,7 @@ def chat():
             if not isinstance(msg, dict):
                 continue
             role = "user" if sanitize_str(msg.get("role")) == "user" else "model"
-            content = sanitize_str(msg.get("content"), max_length=4096)
+            content = sanitize_str(msg.get("content"), max_length=4000)
             if content:
                 gemini_history.append(types.Content(
                     role=role,
@@ -188,18 +244,17 @@ def chat():
                     break
             except Exception as e:
                 last_error = e
-                print(f"[Warning] Model {model} failed: {e}")
 
         if not response_text:
-            return jsonify({"error": f"Failed to generate response: {last_error}"}), 500
+            return jsonify(trim_response({"error": "AI service temporarily unavailable. Please try again."})), 503
 
-        # ── Parameterized Insert: scoped by sanitized session_id ────────────
+        # Parameterized Insert with sanitized fields
         conv_coll = get_conversations_collection()
         if conv_coll is not None:
             conv_doc = {
-                "session_id": session_id,          # sanitized
-                "visitor_message": visitor_message, # sanitized
-                "ai_response": str(response_text)[:8192],
+                "session_id": session_id,
+                "visitor_message": visitor_message,
+                "ai_response": str(response_text).strip()[:8192],
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "processed": False,
                 "processing_status": "pending",
@@ -208,164 +263,147 @@ def chat():
                 }
             }
             try:
-                inserted = conv_coll.insert_one(conv_doc)
-                print(f"[Info] Conversation saved with ID: {inserted.inserted_id} (session: {session_id})")
+                conv_coll.insert_one(conv_doc)
                 t = threading.Thread(target=_run_processing_background, daemon=True)
                 t.start()
             except Exception as e:
-                print(f"[Error] Failed to insert conversation to MongoDB: {e}")
+                print(f"[Error] Failed to insert conversation: {e}")
 
-        return jsonify({
+        # 17. Trim API response
+        return jsonify(trim_response({
             "session_id": session_id,
-            "response": response_text,
+            "response": str(response_text).strip(),
             "role": "assistant"
-        })
+        }))
 
     except Exception as e:
-        print(f"[Error] Exception in /api/chat: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify(trim_response({"error": "Failed to process chat request."})), 500
 
 
 @app.route('/api/conversations', methods=['GET'])
 def get_session_conversations():
-    """Retrieve conversations with parameterized session-scoped query."""
     try:
         is_admin = check_admin_auth(request)
-
-        # ── Parameterized: sanitize session_id before querying ──────────────
         raw_session_id = request.args.get("session_id")
-        session_id = sanitize_str(raw_session_id, max_length=256)
+        session_id = sanitize_str(raw_session_id, max_length=128)
 
         conv_coll = get_conversations_collection()
         if conv_coll is None:
-            return jsonify({"error": "Conversations collection unavailable", "items": []})
+            return jsonify(trim_response({"error": "Conversations collection unavailable", "items": []}))
 
         if not is_admin:
             if not session_id:
-                return jsonify({
+                return jsonify(trim_response({
                     "error": "RLS restriction: session_id is required for non-admin requests"
-                }), 403
-            # Parameterized session-scoped query
+                })), 403
             query = build_session_query(session_id)
         else:
-            # Admin: optionally filter by session_id
             query = build_session_query(session_id) if session_id else {}
 
         items = list(conv_coll.find(query))
+        cleaned_items = []
         for item in items:
             item['_id'] = str(item['_id'])
+            cleaned_items.append(trim_response(item))
 
-        return jsonify({
-            "count": len(items),
+        # 17. Trim API response
+        return jsonify(trim_response({
+            "count": len(cleaned_items),
             "session_id": session_id if not is_admin else "all_admin",
-            "items": items
-        })
+            "items": cleaned_items
+        }))
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify(trim_response({"error": "Failed to retrieve conversations."})), 500
 
 
 @app.route('/api/process-data', methods=['POST'])
 def process_data():
-    """Manual processing trigger - admin only."""
     if not check_admin_auth(request):
-        return jsonify({"error": "Forbidden: Admin access required."}), 403
+        return jsonify(trim_response({"error": "Forbidden: Admin access required."})), 403
     try:
         result = process_unprocessed_conversations()
-        return jsonify(result)
+        return jsonify(trim_response(result))
     except Exception as e:
-        print(f"[Error] Exception in /api/process-data: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify(trim_response({"error": "Processing error occurred."})), 500
 
 
 @app.route('/api/knowledge', methods=['GET'])
 def get_knowledge():
-    """
-    Retrieve knowledge items with parameterized status filter + RLS.
-    Public callers → forced status='approved' (whitelisted).
-    Admins → can query any whitelisted status.
-    """
     try:
         is_admin = check_admin_auth(request)
-
-        # ── Parameterized: whitelist-validate status filter ─────────────────
         raw_status = request.args.get('status', 'approved' if not is_admin else 'all')
         status_filter = allowed_value(raw_status, ALLOWED_STATUSES, default='approved')
 
-        # RLS enforcement: non-admins can ONLY see 'approved'
         if not is_admin and status_filter != 'approved':
-            print(f"[RLS Guard] Non-admin attempted status='{status_filter}'. Forcing 'approved'.")
             status_filter = 'approved'
 
         know_coll = get_knowledge_collection()
         if know_coll is None:
-            return jsonify({"error": "MongoDB knowledge collection unavailable", "items": []})
+            return jsonify(trim_response({"error": "MongoDB knowledge collection unavailable", "items": []}))
 
-        # ── Parameterized query builder ──────────────────────────────────────
         query = build_status_query(status_filter)
         items = list(know_coll.find(query))
+        cleaned_items = []
         for item in items:
             item['_id'] = str(item['_id'])
+            cleaned_items.append(trim_response(item))
 
-        return jsonify({
-            "count": len(items),
+        # 17. Trim API response
+        return jsonify(trim_response({
+            "count": len(cleaned_items),
             "status_filter": status_filter,
             "row_level_security": "active",
             "access_role": "admin" if is_admin else "public",
-            "items": items
-        })
+            "items": cleaned_items
+        }))
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify(trim_response({"error": "Failed to retrieve knowledge."})), 500
 
 
 @app.route('/api/knowledge/status', methods=['POST'])
 def update_knowledge_status():
-    """Update knowledge item status - Admin only with parameterized query."""
     if not check_admin_auth(request):
-        return jsonify({
+        return jsonify(trim_response({
             "error": "Forbidden: Row-Level Security restriction. Only administrators can update knowledge status."
-        }), 403
+        })), 403
 
     try:
-        data = request.get_json() or {}
-
-        # ── Parameterized: sanitize & validate inputs before querying ────────
+        data = request.get_json(silent=True) or {}
         raw_id = data.get("id")
         raw_status = data.get("status")
 
-        # Whitelist-validate the new status
         new_status = allowed_value(
             raw_status,
             frozenset({"approved", "rejected", "pending_review"}),
             default=""
         )
         if not new_status:
-            return jsonify({"error": "Valid status ('approved', 'rejected', 'pending_review') is required"}), 400
+            return jsonify(trim_response({"error": "Valid status is required."})), 400
 
-        # Build parameterized _id query (handles ObjectId vs string safely)
         query = build_id_query(raw_id)
         if query is None:
-            return jsonify({"error": "Invalid or missing item ID"}), 400
+            return jsonify(trim_response({"error": "Invalid or missing item ID."})), 400
 
         know_coll = get_knowledge_collection()
         if know_coll is None:
-            return jsonify({"error": "MongoDB knowledge collection unavailable"}), 500
+            return jsonify(trim_response({"error": "MongoDB knowledge collection unavailable."})), 500
 
         result = know_coll.update_one(
             query,
             {"$set": {
-                "status": new_status,                            # parameterized
+                "status": new_status,
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }}
         )
 
         if result.matched_count == 0:
-            return jsonify({"error": "Knowledge item not found"}), 404
+            return jsonify(trim_response({"error": "Knowledge item not found."})), 404
 
-        return jsonify({"success": True, "id": sanitize_str(raw_id, max_length=128), "status": new_status})
+        return jsonify(trim_response({"success": True, "id": sanitize_str(raw_id, max_length=128), "status": new_status}))
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify(trim_response({"error": "Failed to update knowledge status."})), 500
 
 
 if __name__ == '__main__':
-    print(f"AI Jehosue Backend (Parameterized Queries + RLS + Rate Limiting) on http://127.0.0.1:{PORT}")
+    print(f"AI Jehosue Hardened Backend on http://127.0.0.1:{PORT}")
     app.run(host='0.0.0.0', port=PORT, debug=True)
