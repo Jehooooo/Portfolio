@@ -1,16 +1,31 @@
 /**
- * Custom animated smooth scroll with easing.
- * Uses requestAnimationFrame for a visible, gradual scroll-down animation
- * instead of the browser's native smooth scroll which can feel instant.
+ * Smooth Animated Scroll Engine with easeInOutCubic curve.
+ * Animates smoothly both upwards and downwards when clicking navigation links.
  */
 
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 }
 
-function animateScrollTo(targetY: number, duration = 800) {
-  const startY = window.scrollY
+export function scrollToElement(elementId: string, navHeight = 76) {
+  if (typeof window === 'undefined') return
+
+  const startY = window.pageYOffset || document.documentElement.scrollTop || window.scrollY || 0
+  let targetY = 0
+
+  if (elementId !== 'home') {
+    const target = document.getElementById(elementId)
+    if (target) {
+      const rect = target.getBoundingClientRect()
+      targetY = Math.max(0, rect.top + startY - navHeight)
+    }
+  }
+
   const distance = targetY - startY
+  if (Math.abs(distance) < 4) return
+
+  // Duration scales naturally with distance (400ms to 950ms)
+  const duration = Math.min(Math.max(Math.abs(distance) * 0.4, 450), 950)
   let startTime: number | null = null
 
   function step(currentTime: number) {
@@ -19,7 +34,7 @@ function animateScrollTo(targetY: number, duration = 800) {
     const progress = Math.min(elapsed / duration, 1)
     const easedProgress = easeInOutCubic(progress)
 
-    window.scrollTo(0, startY + distance * easedProgress)
+    window.scrollTo(0, Math.round(startY + distance * easedProgress))
 
     if (progress < 1) {
       requestAnimationFrame(step)
@@ -31,21 +46,12 @@ function animateScrollTo(targetY: number, duration = 800) {
 
 export function smoothScrollTo(
   e: React.MouseEvent<HTMLAnchorElement>,
-  navHeight = 80,
+  navHeight = 76,
 ) {
   const href = e.currentTarget.getAttribute('href')
   if (!href || !href.startsWith('#')) return
 
-  const target = document.getElementById(href.slice(1))
-  if (!target) return
-
   e.preventDefault()
-
-  const top = target.getBoundingClientRect().top + window.scrollY - navHeight
-
-  // Use longer duration for bigger distances so it feels natural
-  const distance = Math.abs(top - window.scrollY)
-  const duration = Math.min(Math.max(distance * 0.6, 500), 1200)
-
-  animateScrollTo(top, duration)
+  const targetId = href.slice(1)
+  scrollToElement(targetId, navHeight)
 }

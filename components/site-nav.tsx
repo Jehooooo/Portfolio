@@ -10,9 +10,25 @@ import { ThemeToggle } from '@/components/theme-toggle'
 export function SiteNav() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
+  const [activeSection, setActiveSection] = useState('home')
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12)
+    const onScroll = () => {
+      setScrolled(window.scrollY > 12)
+
+      // Active section spy
+      const sections = ['contact', 'experience', 'skills', 'projects', 'about', 'home']
+      const scrollPos = window.scrollY + 120
+
+      for (const section of sections) {
+        const el = document.getElementById(section)
+        if (el && el.offsetTop <= scrollPos) {
+          setActiveSection(section)
+          break
+        }
+      }
+    }
+
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
@@ -30,7 +46,7 @@ export function SiteNav() {
       <nav
         aria-label="Primary"
         className={cn(
-          'mx-auto flex max-w-6xl items-center justify-between rounded-2xl px-4 py-3 transition-all duration-300 sm:px-5',
+          'mx-auto flex max-w-6xl items-center justify-between rounded-2xl px-4 py-2.5 sm:py-3 transition-all duration-300 sm:px-5',
           scrolled ? 'glass-strong shadow-lg shadow-black/20' : 'glass',
         )}
       >
@@ -43,17 +59,27 @@ export function SiteNav() {
         </a>
 
         <ul className="hidden items-center gap-1 md:flex">
-          {navLinks.map((link) => (
-            <li key={link.href}>
-              <a
-                href={link.href}
-                onClick={smoothScrollTo}
-                className="rounded-lg px-3.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              >
-                {link.label}
-              </a>
-            </li>
-          ))}
+          {navLinks.map((link) => {
+            const sectionId = link.href.slice(1)
+            const isActive = activeSection === sectionId
+
+            return (
+              <li key={link.href}>
+                <a
+                  href={link.href}
+                  onClick={smoothScrollTo}
+                  className={cn(
+                    'rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200',
+                    isActive
+                      ? 'bg-foreground/10 text-foreground font-semibold shadow-xs'
+                      : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground',
+                  )}
+                >
+                  {link.label}
+                </a>
+              </li>
+            )
+          })}
         </ul>
 
         <div className="flex items-center gap-2">
@@ -93,20 +119,30 @@ export function SiteNav() {
           )}
         >
           <ul className="flex flex-col gap-1 p-3">
-            {navLinks.map((link) => (
-              <li key={link.href}>
-                <a
-                  href={link.href}
-                  onClick={(e) => {
-                    setOpen(false)
-                    smoothScrollTo(e)
-                  }}
-                  className="block rounded-lg px-4 py-3 text-base text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                >
-                  {link.label}
-                </a>
-              </li>
-            ))}
+            {navLinks.map((link) => {
+              const sectionId = link.href.slice(1)
+              const isActive = activeSection === sectionId
+
+              return (
+                <li key={link.href}>
+                  <a
+                    href={link.href}
+                    onClick={(e) => {
+                      setOpen(false)
+                      smoothScrollTo(e)
+                    }}
+                    className={cn(
+                      'block rounded-lg px-4 py-3 text-base transition-colors',
+                      isActive
+                        ? 'bg-foreground/10 text-foreground font-semibold'
+                        : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                    )}
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              )
+            })}
             <li>
               <a
                 href="#contact"
