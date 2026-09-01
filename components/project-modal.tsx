@@ -81,10 +81,10 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
 
       {/* Modal Container */}
       <div className="relative z-10 max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-2xl sm:rounded-3xl border border-white/12 bg-background/95 p-4 sm:p-8 shadow-2xl shadow-black/50 backdrop-blur-2xl animate-in zoom-in-95 duration-300">
-        {/* Sticky Header Close Button */}
-        <div className="sticky top-0 z-20 -mx-4 -mt-4 mb-5 flex items-center justify-between border-b border-border/60 bg-background/90 px-4 py-3 backdrop-blur-md sm:-mx-8 sm:-mt-8 sm:mb-6 sm:px-8 sm:py-4">
-          <div className="flex items-center gap-3">
-            <span className="rounded-full bg-muted px-3 py-1 font-mono text-xs font-semibold text-foreground/70 border border-border">
+        {/* Sticky Header with Status, Categories, Role & Close */}
+        <div className="sticky top-0 z-20 -mx-4 -mt-4 mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur-md sm:-mx-8 sm:-mt-8 sm:mb-6 sm:px-8 sm:py-3.5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <span className="rounded-full bg-card px-3 py-1 font-mono text-xs font-semibold text-foreground/80 border border-border">
               {project.status}
             </span>
             <span className="font-mono text-xs text-muted-foreground">
@@ -92,33 +92,33 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close modal"
-            className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-white/8 hover:text-foreground"
-          >
-            <X size={22} />
-          </button>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 font-mono text-xs shadow-xs">
+              <span className="font-bold text-muted-foreground uppercase tracking-wider">ROLE:</span>
+              <span className="font-semibold text-foreground">{project.role}</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close modal"
+              className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
-        {/* Title, Subtitle & Upper Right Role Badge */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="flex-1">
-            <h2 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl text-foreground">
-              {project.title}
-            </h2>
-            {project.subtitle && (
-              <p className="mt-2 text-balance font-mono text-sm leading-relaxed text-foreground/70">
-                {project.subtitle}
-              </p>
-            )}
-          </div>
-
-          <div className="shrink-0 self-start inline-flex items-center gap-2 rounded-xl border border-border bg-card/90 px-3.5 py-2 shadow-xs backdrop-blur-xs">
-            <span className="font-mono text-xs font-bold text-muted-foreground uppercase tracking-wider">Role:</span>
-            <span className="font-mono text-xs font-semibold text-foreground">{project.role}</span>
-          </div>
+        {/* Title & Subtitle */}
+        <div className="mb-6">
+          <h2 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl text-foreground">
+            {project.title}
+          </h2>
+          {project.subtitle && (
+            <p className="mt-2 text-balance font-mono text-sm leading-relaxed text-muted-foreground sm:text-base">
+              {project.subtitle}
+            </p>
+          )}
         </div>
 
         {/* Media Player Showcase */}
