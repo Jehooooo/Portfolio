@@ -11,7 +11,7 @@ import { GitHubHeatmap } from '@/components/github-heatmap'
 import { BatSwarm } from '@/components/bat-swarm'
 
 export function Hero() {
-  const nameTitles = ['Jeho', 'CS Student']
+  const nameTitles = ["Hi, I'm Jeho", "Hi, Visitor"]
 
   const socials = [
     {
