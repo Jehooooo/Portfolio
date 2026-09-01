@@ -196,28 +196,41 @@ export function AiChat() {
           className="chat-panel fixed bottom-24 right-6 z-50 flex w-[360px] flex-col rounded-2xl shadow-2xl sm:w-[400px] max-h-[min(600px,calc(100dvh-120px))]"
         >
           {/* Header */}
-          <div className="chat-header flex items-center gap-3 rounded-t-2xl px-5 py-4">
-            <div className="relative">
+          <div className="chat-header flex items-center gap-3 rounded-t-2xl px-4 py-3.5 sm:px-5 sm:py-4">
+            <div className="relative shrink-0">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-foreground">
-                <Sparkles size={20} />
+                <Sparkles size={18} />
               </div>
-              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[#0c0618] bg-green-400" />
+              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-green-500" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-semibold text-foreground">Jeho</h3>
-              <p className="text-xs text-muted-foreground">
+              <h3 className="text-sm sm:text-base font-bold text-foreground leading-tight tracking-tight">
+                Jeho
+              </h3>
+              <p className="text-xs text-muted-foreground truncate">
                 Ask me anything about me!
               </p>
             </div>
-            <button
-              type="button"
-              onClick={resetChat}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              aria-label="Reset conversation"
-              title="Reset conversation"
-            >
-              <RotateCcw size={15} />
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={resetChat}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                aria-label="Reset conversation"
+                title="Reset conversation"
+              >
+                <RotateCcw size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                aria-label="Close chat"
+                title="Close chat"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
           {/* Messages */}
