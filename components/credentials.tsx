@@ -42,7 +42,7 @@ export function Credentials() {
                       <Award size={22} />
                     </span>
                     <div>
-                      <h3 className="text-sm font-semibold text-foreground transition-colors group-hover:text-foreground">
+                      <h3 className="text-sm font-semibold text-foreground transition-colors group-hover:text-foreground group-hover:drop-shadow-[0_0_8px_rgba(60,45,30,0.3)] dark:group-hover:text-white dark:group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]">
                         {cert.title}
                       </h3>
                       <p className="mt-0.5 text-xs text-muted-foreground">

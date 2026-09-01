@@ -84,19 +84,19 @@ export function About() {
 
         {filteredItems.map((item, i) => (
           <Reveal key={item.id} delay={i * 60}>
-            <div className="group relative rounded-xl p-4 sm:p-5 transition-all duration-300 hover:bg-card/50 border border-transparent hover:border-border">
+            <div className="group relative rounded-xl p-4 sm:p-5 transition-all duration-300 hover:bg-card/60 border border-transparent hover:border-border hover:shadow-[0_4px_24px_rgba(60,45,30,0.08)] dark:hover:shadow-[0_4px_24px_rgba(255,255,255,0.06)]">
               {/* Glowing vertical line segment on hover */}
-              <div className="absolute -left-[24px] sm:-left-[32px] top-0 bottom-0 w-[2px] -translate-x-1/2 bg-foreground opacity-0 group-hover:opacity-100 shadow-sm transition-all duration-300" />
+              <div className="absolute -left-[24px] sm:-left-[32px] top-0 bottom-0 w-[2px] -translate-x-1/2 bg-foreground opacity-0 group-hover:opacity-100 shadow-[0_0_10px_rgba(60,45,30,0.3)] dark:shadow-[0_0_12px_rgba(255,255,255,0.8)] transition-all duration-300" />
 
               {/* Glowing node dot on hover */}
               <span
-                className="absolute -left-[24px] sm:-left-[32px] top-6 h-3 w-3 -translate-x-1/2 rounded-full border border-muted-foreground/40 bg-background transition-all duration-300 group-hover:border-foreground group-hover:bg-foreground group-hover:scale-125"
+                className="absolute -left-[24px] sm:-left-[32px] top-6 h-3 w-3 -translate-x-1/2 rounded-full border border-muted-foreground/40 bg-background transition-all duration-300 group-hover:border-foreground group-hover:bg-foreground group-hover:scale-125 group-hover:shadow-[0_0_12px_rgba(60,45,30,0.4)] dark:group-hover:border-white dark:group-hover:bg-white dark:group-hover:shadow-[0_0_14px_rgba(255,255,255,0.9)]"
                 aria-hidden="true"
               />
 
               {/* Title & Year */}
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <h3 className="text-base font-bold text-foreground sm:text-lg transition-colors duration-300">
+                <h3 className="text-base font-bold text-foreground sm:text-lg transition-all duration-300 group-hover:text-foreground group-hover:drop-shadow-[0_0_8px_rgba(60,45,30,0.35)] dark:group-hover:text-white dark:group-hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.7)]">
                   {item.title}
                 </h3>
                 <span className="font-mono text-xs text-muted-foreground sm:text-sm transition-colors duration-300 group-hover:text-foreground/70">
