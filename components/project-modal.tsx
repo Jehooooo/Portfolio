@@ -38,6 +38,12 @@ interface ProjectModalProps {
 
 export function ProjectModal({ project, onClose }: ProjectModalProps) {
   const [playing, setPlaying] = useState(false)
+  const [playingBottom, setPlayingBottom] = useState(false)
+
+  useEffect(() => {
+    setPlaying(false)
+    setPlayingBottom(false)
+  }, [project])
 
   // Disable background scrolling when modal is open
   useEffect(() => {
@@ -292,14 +298,36 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
               <Play size={16} /> System Demonstration Video
             </h3>
             <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-black/40 shadow-inner">
-              <video
-                controls
-                preload="metadata"
-                className="h-full w-full object-cover"
-              >
-                <source src={project.bottomVideo} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+              {playingBottom ? (
+                <video
+                  autoPlay
+                  controls
+                  preload="auto"
+                  className="h-full w-full object-cover"
+                >
+                  <source src={project.bottomVideo} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setPlayingBottom(true)}
+                  aria-label="Play system demonstration video"
+                  className="group relative h-full w-full block cursor-pointer"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={project.image || '/images/placeholder.svg'}
+                    alt="System demonstration video preview"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors group-hover:bg-black/45">
+                    <span className="flex h-16 w-16 items-center justify-center rounded-full btn-bw-primary text-white shadow-2xl transition-transform duration-200 group-hover:scale-110">
+                      <Play size={26} className="ml-1 text-white" fill="currentColor" />
+                    </span>
+                  </div>
+                </button>
+              )}
             </div>
           </div>
         )}
