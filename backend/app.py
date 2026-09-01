@@ -1,6 +1,6 @@
 import json
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from bson import ObjectId
@@ -14,6 +14,16 @@ from processor import process_unprocessed_conversations
 
 app = Flask(__name__)
 CORS(app)
+
+# Secure Session Cookie Configuration
+app.config.update(
+    SECRET_KEY=ADMIN_SECRET,
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    PERMANENT_SESSION_LIFETIME=timedelta(days=7),
+    SESSION_COOKIE_NAME='__Secure-jeho-session'
+)
 
 # ---------------------------------------------------------------------------
 # Candidate Gemini models - ordered by availability & active quota
