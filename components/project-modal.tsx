@@ -102,16 +102,23 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
           </button>
         </div>
 
-        {/* Title & Subtitle */}
-        <div className="mb-6">
-          <h2 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl text-foreground">
-            {project.title}
-          </h2>
-          {project.subtitle && (
-            <p className="mt-2 text-balance font-mono text-sm leading-relaxed text-foreground/70">
-              {project.subtitle}
-            </p>
-          )}
+        {/* Title, Subtitle & Upper Right Role Badge */}
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex-1">
+            <h2 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl text-foreground">
+              {project.title}
+            </h2>
+            {project.subtitle && (
+              <p className="mt-2 text-balance font-mono text-sm leading-relaxed text-foreground/70">
+                {project.subtitle}
+              </p>
+            )}
+          </div>
+
+          <div className="shrink-0 self-start inline-flex items-center gap-2 rounded-xl border border-border bg-card/90 px-3.5 py-2 shadow-xs backdrop-blur-xs">
+            <span className="font-mono text-xs font-bold text-muted-foreground uppercase tracking-wider">Role:</span>
+            <span className="font-mono text-xs font-semibold text-foreground">{project.role}</span>
+          </div>
         </div>
 
         {/* Media Player Showcase */}
@@ -290,12 +297,8 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
           )}
         </div>
 
-        {/* Role & Links Footer */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border/60 pt-6">
-          <div className="font-mono text-xs text-muted-foreground">
-            <span className="text-foreground font-semibold">Role:</span> {project.role}
-          </div>
-
+        {/* Links Footer */}
+        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border/60 pt-6">
           <div className="flex flex-wrap gap-3">
             {project.liveUrl && (
               <a
