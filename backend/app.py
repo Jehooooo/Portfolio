@@ -11,13 +11,21 @@ from config import GEMINI_API_KEY, PORT, ADMIN_SECRET, ENABLE_RLS
 from db import get_conversations_collection, get_knowledge_collection, get_db
 from knowledge_base import build_system_instruction
 from processor import process_unprocessed_conversations
+from query_params import (
+    sanitize_str,
+    allowed_value,
+    build_session_query,
+    build_status_query,
+    build_id_query,
+    ALLOWED_STATUSES,
+)
 
 app = Flask(__name__)
 CORS(app)
 
 # Secure Session Cookie Configuration
 app.config.update(
-    SECRET_KEY=ADMIN_SECRET,
+    SECRET_KEY=ADMIN_SECRET or 'dev-only-insecure-key',
     SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
@@ -26,37 +34,6 @@ app.config.update(
 )
 
 # ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-# In-Memory Rate Limiter for Python Flask Backend
-# ---------------------------------------------------------------------------
-_rate_limit_store = {}
-_rate_limit_lock = threading.Lock()
-
-def check_backend_rate_limit(key: str, limit: int, window_seconds: int = 60) -> tuple[bool, int]:
-    """Sliding-window rate limiter per client key (IP or session)."""
-    now = datetime.now(timezone.utc).timestamp()
-    window_start = now - window_seconds
-
-    with _rate_limit_lock:
-        if key not in _rate_limit_store:
-            _rate_limit_store[key] = []
-
-        # Filter active timestamps
-        _rate_limit_store[key] = [ts for ts in _rate_limit_store[key] if ts > window_start]
-
-        if len(_rate_limit_store[key]) >= limit:
-            oldest = _rate_limit_store[key][0]
-            retry_after = max(int(oldest + window_seconds - now), 1)
-            return False, retry_after
-
-        _rate_limit_store[key].append(now)
-        return True, 0
-
-def get_client_ip(req) -> str:
-    if req.headers.get('X-Forwarded-For'):
-        return req.headers.get('X-Forwarded-For').split(',')[0].strip()
-    return req.remote_addr or '127.0.0.1'
-
 # Candidate Gemini models - ordered by availability & active quota
 # ---------------------------------------------------------------------------
 CANDIDATE_MODELS = [
@@ -69,24 +46,47 @@ CANDIDATE_MODELS = [
     'gemini-3.5-flash',
 ]
 
+# ---------------------------------------------------------------------------
+# In-Memory Rate Limiter
+# ---------------------------------------------------------------------------
+_rate_limit_store = {}
+_rate_limit_lock = threading.Lock()
+
+def check_backend_rate_limit(key: str, limit: int, window_seconds: int = 60) -> tuple[bool, int]:
+    """Sliding-window rate limiter per client key (IP or session)."""
+    now = datetime.now(timezone.utc).timestamp()
+    window_start = now - window_seconds
+    with _rate_limit_lock:
+        if key not in _rate_limit_store:
+            _rate_limit_store[key] = []
+        _rate_limit_store[key] = [ts for ts in _rate_limit_store[key] if ts > window_start]
+        if len(_rate_limit_store[key]) >= limit:
+            oldest = _rate_limit_store[key][0]
+            retry_after = max(int(oldest + window_seconds - now), 1)
+            return False, retry_after
+        _rate_limit_store[key].append(now)
+        return True, 0
+
+def get_client_ip(req) -> str:
+    if req.headers.get('X-Forwarded-For'):
+        return req.headers.get('X-Forwarded-For').split(',')[0].strip()
+    return req.remote_addr or '127.0.0.1'
+
 
 def check_admin_auth(req) -> bool:
     """Validate administrator credentials for Row-Level Security overrides."""
     if not ENABLE_RLS:
         return True
-
-    # Check X-Admin-Secret header
+    if not ADMIN_SECRET:
+        return False
     admin_header = req.headers.get("X-Admin-Secret") or req.headers.get("x-admin-secret")
     if admin_header and admin_header == ADMIN_SECRET:
         return True
-
-    # Check Bearer Token
     auth_header = req.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         token = auth_header.split(" ", 1)[1].strip()
         if token == ADMIN_SECRET:
             return True
-
     return False
 
 
@@ -102,7 +102,7 @@ def _run_processing_background():
 
 
 # ---------------------------------------------------------------------------
-# Routes with Row-Level Security (RLS)
+# Routes with Parameterized Queries + Row-Level Security + Rate Limiting
 # ---------------------------------------------------------------------------
 
 @app.route('/api/health', methods=['GET'])
@@ -113,7 +113,8 @@ def health_check():
         "status": "online",
         "service": "AI Jehosue Backend",
         "mongodb": mongo_status,
-        "row_level_security": "enabled" if ENABLE_RLS else "disabled"
+        "row_level_security": "enabled" if ENABLE_RLS else "disabled",
+        "query_parameterization": "active"
     })
 
 
@@ -124,32 +125,38 @@ def chat():
         client_ip = get_client_ip(request)
         allowed, retry_after = check_backend_rate_limit(f"chat:{client_ip}", limit=25, window_seconds=60)
         if not allowed:
-            print(f"[RateLimit] 🛑 Chat rate limit hit for IP: {client_ip}. Retry in {retry_after}s.")
+            print(f"[RateLimit] Chat rate limit hit for IP: {client_ip}. Retry in {retry_after}s.")
             return jsonify({
                 "error": f"Too many chat requests. Please slow down and try again in {retry_after} seconds."
             }), 429
 
     try:
         data = request.get_json() or {}
-        session_id = data.get("session_id", "anonymous-session")
+
+        # ── Parameterized: sanitize all user-supplied input fields ──────────
+        session_id = sanitize_str(data.get("session_id"), max_length=256, default="anonymous-session")
         messages = data.get("messages", [])
 
         if not messages or not isinstance(messages, list):
-            single_msg = data.get("message", "")
+            single_msg = sanitize_str(data.get("message"), max_length=4096)
             if single_msg:
                 messages = [{"role": "user", "content": single_msg}]
             else:
                 return jsonify({"error": "Messages are required"}), 400
 
-        visitor_message = messages[-1].get("content", "")
+        # Sanitize the visitor message content
+        last_msg = messages[-1] if messages else {}
+        visitor_message = sanitize_str(last_msg.get("content") if isinstance(last_msg, dict) else "", max_length=4096)
         if not visitor_message:
             return jsonify({"error": "Visitor message cannot be empty"}), 400
 
-        # Build Gemini history format from previous messages
+        # Build Gemini history
         gemini_history = []
         for msg in messages[:-1]:
-            role = "user" if msg.get("role") == "user" else "model"
-            content = msg.get("content", "")
+            if not isinstance(msg, dict):
+                continue
+            role = "user" if sanitize_str(msg.get("role")) == "user" else "model"
+            content = sanitize_str(msg.get("content"), max_length=4096)
             if content:
                 gemini_history.append(types.Content(
                     role=role,
@@ -186,28 +193,25 @@ def chat():
         if not response_text:
             return jsonify({"error": f"Failed to generate response: {last_error}"}), 500
 
-        # Save conversation to MongoDB scoped strictly by session_id (RLS compliant)
+        # ── Parameterized Insert: scoped by sanitized session_id ────────────
         conv_coll = get_conversations_collection()
         if conv_coll is not None:
             conv_doc = {
-                "session_id": session_id,
-                "visitor_message": visitor_message,
-                "ai_response": response_text,
+                "session_id": session_id,          # sanitized
+                "visitor_message": visitor_message, # sanitized
+                "ai_response": str(response_text)[:8192],
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "processed": False,
                 "processing_status": "pending",
                 "metadata": {
-                    "model": used_model or "unknown",
+                    "model": sanitize_str(used_model, max_length=64, default="unknown"),
                 }
             }
             try:
                 inserted = conv_coll.insert_one(conv_doc)
                 print(f"[Info] Conversation saved with ID: {inserted.inserted_id} (session: {session_id})")
-
-                # Auto-trigger processing in the background
                 t = threading.Thread(target=_run_processing_background, daemon=True)
                 t.start()
-
             except Exception as e:
                 print(f"[Error] Failed to insert conversation to MongoDB: {e}")
 
@@ -224,10 +228,13 @@ def chat():
 
 @app.route('/api/conversations', methods=['GET'])
 def get_session_conversations():
-    """Retrieve conversations with strict Row-Level Security scoped to the caller's session_id."""
+    """Retrieve conversations with parameterized session-scoped query."""
     try:
-        session_id = request.args.get("session_id")
         is_admin = check_admin_auth(request)
+
+        # ── Parameterized: sanitize session_id before querying ──────────────
+        raw_session_id = request.args.get("session_id")
+        session_id = sanitize_str(raw_session_id, max_length=256)
 
         conv_coll = get_conversations_collection()
         if conv_coll is None:
@@ -235,10 +242,14 @@ def get_session_conversations():
 
         if not is_admin:
             if not session_id:
-                return jsonify({"error": "RLS restriction: session_id query parameter is required for non-admin requests"}), 403
-            query = {"session_id": session_id}
+                return jsonify({
+                    "error": "RLS restriction: session_id is required for non-admin requests"
+                }), 403
+            # Parameterized session-scoped query
+            query = build_session_query(session_id)
         else:
-            query = {"session_id": session_id} if session_id else {}
+            # Admin: optionally filter by session_id
+            query = build_session_query(session_id) if session_id else {}
 
         items = list(conv_coll.find(query))
         for item in items:
@@ -255,7 +266,9 @@ def get_session_conversations():
 
 @app.route('/api/process-data', methods=['POST'])
 def process_data():
-    """Manual endpoint to trigger processing."""
+    """Manual processing trigger - admin only."""
+    if not check_admin_auth(request):
+        return jsonify({"error": "Forbidden: Admin access required."}), 403
     try:
         result = process_unprocessed_conversations()
         return jsonify(result)
@@ -267,26 +280,29 @@ def process_data():
 @app.route('/api/knowledge', methods=['GET'])
 def get_knowledge():
     """
-    Retrieve knowledge base items with Row-Level Security:
-    - Public callers: ONLY rows where status == 'approved' are returned.
-    - Admin callers (with X-Admin-Secret): Can query 'all', 'pending_review', or 'rejected'.
+    Retrieve knowledge items with parameterized status filter + RLS.
+    Public callers → forced status='approved' (whitelisted).
+    Admins → can query any whitelisted status.
     """
     try:
         is_admin = check_admin_auth(request)
-        status_filter = request.args.get('status', 'approved' if not is_admin else 'all')
 
-        # Enforce RLS: Non-admins cannot access unapproved rows
+        # ── Parameterized: whitelist-validate status filter ─────────────────
+        raw_status = request.args.get('status', 'approved' if not is_admin else 'all')
+        status_filter = allowed_value(raw_status, ALLOWED_STATUSES, default='approved')
+
+        # RLS enforcement: non-admins can ONLY see 'approved'
         if not is_admin and status_filter != 'approved':
-            print("[RLS Guard] 🛑 Non-admin attempted to query unapproved knowledge rows. Forcing status='approved'.")
+            print(f"[RLS Guard] Non-admin attempted status='{status_filter}'. Forcing 'approved'.")
             status_filter = 'approved'
 
         know_coll = get_knowledge_collection()
         if know_coll is None:
             return jsonify({"error": "MongoDB knowledge collection unavailable", "items": []})
 
-        query = {} if (is_admin and status_filter == 'all') else {"status": status_filter}
+        # ── Parameterized query builder ──────────────────────────────────────
+        query = build_status_query(status_filter)
         items = list(know_coll.find(query))
-
         for item in items:
             item['_id'] = str(item['_id'])
 
@@ -303,34 +319,41 @@ def get_knowledge():
 
 @app.route('/api/knowledge/status', methods=['POST'])
 def update_knowledge_status():
-    """Update knowledge status - protected by Row-Level Security / Admin authorization."""
+    """Update knowledge item status - Admin only with parameterized query."""
+    if not check_admin_auth(request):
+        return jsonify({
+            "error": "Forbidden: Row-Level Security restriction. Only administrators can update knowledge status."
+        }), 403
+
     try:
-        # Enforce RLS mutation policy
-        if not check_admin_auth(request):
-            return jsonify({
-                "error": "Forbidden: Row-Level Security restriction. Only authorized administrators can update knowledge status."
-            }), 403
-
         data = request.get_json() or {}
-        item_id = data.get("id")
-        new_status = data.get("status")
 
-        if not item_id or new_status not in ["approved", "rejected", "pending_review"]:
-            return jsonify({"error": "Valid id and status ('approved', 'rejected', 'pending_review') are required"}), 400
+        # ── Parameterized: sanitize & validate inputs before querying ────────
+        raw_id = data.get("id")
+        raw_status = data.get("status")
+
+        # Whitelist-validate the new status
+        new_status = allowed_value(
+            raw_status,
+            frozenset({"approved", "rejected", "pending_review"}),
+            default=""
+        )
+        if not new_status:
+            return jsonify({"error": "Valid status ('approved', 'rejected', 'pending_review') is required"}), 400
+
+        # Build parameterized _id query (handles ObjectId vs string safely)
+        query = build_id_query(raw_id)
+        if query is None:
+            return jsonify({"error": "Invalid or missing item ID"}), 400
 
         know_coll = get_knowledge_collection()
         if know_coll is None:
             return jsonify({"error": "MongoDB knowledge collection unavailable"}), 500
 
-        try:
-            query = {"_id": ObjectId(item_id)}
-        except Exception:
-            query = {"_id": item_id}
-
         result = know_coll.update_one(
             query,
             {"$set": {
-                "status": new_status,
+                "status": new_status,                            # parameterized
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }}
         )
@@ -338,11 +361,11 @@ def update_knowledge_status():
         if result.matched_count == 0:
             return jsonify({"error": "Knowledge item not found"}), 404
 
-        return jsonify({"success": True, "id": item_id, "status": new_status})
+        return jsonify({"success": True, "id": sanitize_str(raw_id, max_length=128), "status": new_status})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':
-    print(f"AI Jehosue Python Backend with Row-Level Security running on http://127.0.0.1:{PORT}")
+    print(f"AI Jehosue Backend (Parameterized Queries + RLS + Rate Limiting) on http://127.0.0.1:{PORT}")
     app.run(host='0.0.0.0', port=PORT, debug=True)
