@@ -51,26 +51,26 @@
 
 :root {
   color-scheme: light;
-  --background: #ffffff;
-  --foreground: #0a0a0a;
-  --card: rgba(255, 255, 255, 0.85);
-  --card-foreground: #0a0a0a;
-  --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
-  --primary: #0a0a0a;
-  --primary-foreground: #ffffff;
-  --secondary: #f5f5f5;
-  --secondary-foreground: #0a0a0a;
-  --muted: #ebebeb;
-  --muted-foreground: #555555;
-  --accent: #f0f0f0;
-  --accent-foreground: #0a0a0a;
-  --accent-brand: #0a0a0a;
-  --accent-brand-foreground: #ffffff;
-  --destructive: #ef4444;
-  --border: rgba(0, 0, 0, 0.15);
-  --input: rgba(0, 0, 0, 0.10);
-  --ring: #0a0a0a;
+  --background: rgb(249, 240, 224);
+  --foreground: #1c1815;
+  --card: rgba(255, 252, 246, 0.85);
+  --card-foreground: #1c1815;
+  --popover: #fcf7ee;
+  --popover-foreground: #1c1815;
+  --primary: #1c1815;
+  --primary-foreground: rgb(249, 240, 224);
+  --secondary: #f2e5cf;
+  --secondary-foreground: #1c1815;
+  --muted: #ebe0cc;
+  --muted-foreground: #706659;
+  --accent: #f2e5cf;
+  --accent-foreground: #1c1815;
+  --accent-brand: #1c1815;
+  --accent-brand-foreground: rgb(249, 240, 224);
+  --destructive: #dc2626;
+  --border: rgba(60, 45, 30, 0.14);
+  --input: rgba(60, 45, 30, 0.12);
+  --ring: #1c1815;
   --radius: 0.9rem;
 }
 
@@ -170,13 +170,13 @@
 
 /* â”€â”€ Light mode overrides â”€â”€ */
 :root:not(.dark) .glass {
-    background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: rgba(249, 240, 224, 0.78);
+    border: 1px solid rgba(60, 45, 30, 0.13);
   }
 
 :root:not(.dark) .glass-strong {
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(0, 0, 0, 0.15);
+    background: rgba(255, 252, 246, 0.95);
+    border: 1px solid rgba(60, 45, 30, 0.16);
   }
 
 :root:not(.dark) .text-gradient {
@@ -187,10 +187,10 @@
 }
 
 :root:not(.dark) .btn-bw-primary {
-  background: #0a0a0a;
-  border: 1px solid rgba(0,0,0,0.2);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
-  color: #ffffff;
+  background: #1c1815;
+  border: 1px solid rgba(60, 45, 30, 0.25);
+  box-shadow: 0 4px 14px rgba(60, 45, 30, 0.15);
+  color: rgb(249, 240, 224);
 }
 
 :root:not(.dark) .btn-bw-primary:hover {
@@ -200,10 +200,10 @@
 }
 
 :root:not(.dark) .btn-bw-secondary {
-  background: rgba(0,0,0,0.05);
-  border: 1px solid rgba(0,0,0,0.12);
+  background: rgba(60, 45, 30, 0.06);
+  border: 1px solid rgba(60, 45, 30, 0.14);
   box-shadow: none;
-  color: #0a0a0a;
+  color: #1c1815;
 }
 
 :root:not(.dark) .btn-bw-secondary:hover {
@@ -227,9 +227,9 @@
 
 :root:not(.dark) .page-glow {
   background:
-    radial-gradient(750px circle at 50% 12%, rgba(255,255,255,0.02), transparent 65%),
-    radial-gradient(600px circle at 15% 45%, rgba(126, 34, 206, 0.04), transparent 60%),
-    radial-gradient(700px circle at 85% 70%, rgba(255,255,255,0.01), transparent 65%);
+    radial-gradient(750px circle at 50% 12%, rgba(210, 190, 160, 0.25), transparent 65%),
+    radial-gradient(600px circle at 15% 45%, rgba(200, 180, 150, 0.18), transparent 60%),
+    radial-gradient(700px circle at 85% 70%, rgba(220, 200, 170, 0.2), transparent 65%);
 }
 
 /* Profile Picture Glow & Hover Container */
@@ -248,7 +248,7 @@
 }
 
 :root:not(.dark) .profile-border-glow {
-  box-shadow: 0 4px 20px rgba(255,255,255,0.14), inset 0 0 10px rgba(147, 51, 234, 0.1);
+  box-shadow: 0 4px 20px rgba(60, 45, 30, 0.12), inset 0 0 10px rgba(60, 45, 30, 0.08);
 }
 
 :root:not(.dark) .profile-border-glow:hover {
@@ -544,3 +544,4 @@
     opacity: 0;
   }
 }
+:root:not(.dark) .typewriter-cursor { background-color: #1c1815; }
