@@ -26,7 +26,7 @@ export function Projects() {
         </p>
       </div>
 
-      <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className={`mt-10 grid gap-6 ${projects.length === 1 ? 'max-w-2xl' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
         {projects.map((project, i) => (
           <Reveal key={project.title} delay={i * 80} as="div">
             <ProjectCard project={project} onSelect={setSelectedProject} />

@@ -155,24 +155,7 @@ export const projects: Project[] = [
     categories: ['Web Development', 'Python'],
     status: 'Completed',
   },
-  {
-    title: 'Project 02',
-    description:
-      'Add your project here. Attach a screenshot, an MP4, or a YouTube/Vimeo link to showcase the build.',
-    technologies: ['Add', 'Your', 'Stack'],
-    role: 'Add your role',
-    categories: ['Python'],
-    status: 'Planned',
-  },
-  {
-    title: 'Project 03',
-    description:
-      'Add your project here. The card automatically shows Live Demo and GitHub buttons once you add their URLs.',
-    technologies: ['Add', 'Your', 'Stack'],
-    role: 'Add your role',
-    categories: ['Academic'],
-    status: 'Planned',
-  },
+
 ]
 
 export const stats = [
