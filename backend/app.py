@@ -160,6 +160,25 @@ def _run_processing_background():
 # API Routes
 # ---------------------------------------------------------------------------
 
+@app.route('/', methods=['GET'])
+def root_index():
+    db = get_db()
+    mongo_status = "connected" if db is not None else "disconnected"
+    return jsonify(trim_response({
+        "status": "online",
+        "service": "AI Jehosue Knowledge & Chat API Server",
+        "version": "1.0.0",
+        "mongodb": mongo_status,
+        "frontend_url": "http://localhost:3000",
+        "endpoints": {
+            "health": "/api/health",
+            "chat": "POST /api/chat",
+            "knowledge": "GET /api/knowledge",
+            "conversations": "GET /api/conversations",
+            "process_data": "POST /api/process-data"
+        }
+    }))
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     db = get_db()
