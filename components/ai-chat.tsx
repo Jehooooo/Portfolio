@@ -20,7 +20,7 @@ const WELCOME_MESSAGE: Message = {
   id: 'welcome',
   role: 'assistant',
   content:
-    "Hey! I'm Jehosue 😄. Ask me anything about my projects, skills, experience, or what I'm currently learning!",
+    "Hey! I'm Jehosue 👋. Ask me anything about my projects, skills, experience, or what I'm currently learning!",
 }
 
 export function AiChat() {
@@ -28,7 +28,6 @@ export function AiChat() {
   const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [hasError, setHasError] = useState(false)
   const [sessionId, setSessionId] = useState<string>('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -83,7 +82,6 @@ export function AiChat() {
     setMessages(updatedMessages)
     setInput('')
     setIsLoading(true)
-    setHasError(false)
 
     // Create a placeholder assistant message for streaming
     const assistantId = (Date.now() + 1).toString()
@@ -133,14 +131,13 @@ export function AiChat() {
         )
       }
     } catch {
-      setHasError(true)
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantId
             ? {
               ...m,
               content:
-                "Hmm, something went wrong on my end. Try again in a bit? If this keeps happening, the API key might need to be set up.",
+                "I'm taking a quick breather at the moment! Feel free to explore my featured projects or message me directly using the contact form below.",
             }
             : m,
         ),
@@ -164,7 +161,6 @@ export function AiChat() {
 
   const resetChat = () => {
     setMessages([WELCOME_MESSAGE])
-    setHasError(false)
   }
 
   const showStarters = messages.length <= 1
@@ -178,14 +174,20 @@ export function AiChat() {
         onClick={() => setIsOpen((prev) => !prev)}
         className={`chat-fab fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all duration-300 ${isOpen
           ? 'rotate-90 bg-white/10 backdrop-blur-md border border-white/20'
-          : 'chat-fab-glow'
+          : 'hover:scale-105 active:scale-95'
           }`}
-        aria-label={isOpen ? 'Close chat' : 'Chat with Jeho'}
+        aria-label={isOpen ? 'Close AI chat' : 'Open AI chat'}
       >
         {isOpen ? (
-          <X size={22} />
+          <X size={22} className="text-foreground" />
         ) : (
-          <MessageSquare size={22} />
+          <div className="relative">
+            <MessageSquare size={22} className="text-white dark:text-black" />
+            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+            </span>
+          </div>
         )}
       </button>
 
@@ -193,25 +195,37 @@ export function AiChat() {
       {isOpen && (
         <div
           ref={chatPanelRef}
-          className="chat-panel fixed bottom-24 right-6 z-50 flex w-[360px] flex-col rounded-2xl shadow-2xl sm:w-[400px] max-h-[min(600px,calc(100dvh-120px))]"
+          role="dialog"
+          aria-label="Chat with AI Jehosue"
+          className="chat-panel fixed bottom-24 right-4 sm:right-6 z-50 flex flex-col rounded-3xl shadow-2xl transition-all animate-in fade-in zoom-in-95 duration-200"
+          style={{
+            width: 'min(400px, calc(100vw - 2rem))',
+            height: 'min(580px, calc(100vh - 8rem))',
+          }}
         >
           {/* Header */}
-          <div className="chat-header flex items-center gap-3 rounded-t-2xl px-4 py-3.5 sm:px-5 sm:py-4">
-            <div className="relative shrink-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-foreground">
-                <Sparkles size={18} />
+          <div className="chat-header flex items-center justify-between px-5 py-4 border-b border-border/50">
+            <div className="flex items-center gap-3">
+              <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm">
+                <Sparkles size={16} />
+                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-background" />
               </div>
-              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-green-500" />
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold tracking-tight text-foreground">
+                    AI Jehosue
+                  </span>
+                  <span className="chat-badge rounded-full px-2 py-0.5 text-[10px] font-medium">
+                    AI
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Ask me anything about my work
+                </p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm sm:text-base font-bold text-foreground leading-tight tracking-tight">
-                Jeho
-              </h3>
-              <p className="text-xs text-muted-foreground truncate">
-                Ask me anything about me!
-              </p>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
+
+            <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={resetChat}
@@ -320,15 +334,6 @@ export function AiChat() {
               Conversations may be stored to help me improve :)
             </p>
           </div>
-
-          {/* Error indicator */}
-          {hasError && (
-            <div className="px-4 pb-2">
-              <p className="text-[10px] text-red-400/70 text-center">
-                Connection issue — check your API key in .env.local
-              </p>
-            </div>
-          )}
         </div>
       )}
     </>
