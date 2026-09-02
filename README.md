@@ -8,7 +8,7 @@
 
 <p align="left">
   <a href="https://skillicons.dev">
-    <img src="https://skillicons.dev/icons?i=js,ts,py,java,html,css,react,nextjs,vite,tailwind,flask,django,mysql,mongodb,git,github,vercel,ps,pr" alt="My Skills & Tools" />
+    <img src="https://skillicons.dev/icons?i=js,ts,py,html,css,react,nextjs,vite,tailwind,flask,django,mysql,mongodb,git,github,vercel,ps,pr" alt="My Skills & Tools" />
   </a>
 </p>
 
@@ -17,12 +17,12 @@
 ## 📊 Most Used Languages & GitHub Analytics
 
 <p align="left">
-  <img src="https://github-profile-summary-cards.vercel.app/api/cards/most-commit-language?username=Jehooooo&theme=tokyonight" height="180" alt="Most Used Programming Languages" />
-  <img src="https://github-profile-summary-cards.vercel.app/api/cards/stats?username=Jehooooo&theme=tokyonight" height="180" alt="GitHub Profile Stats" />
+  <img src="https://github-readme-stats.anuraghazra1.vercel.app/api/top-langs/?username=Jehooooo&hide=java,Java&layout=compact&theme=tokyonight&hide_border=true&bg_color=0d1117&title_color=26a641&text_color=c9d1d9" height="175" alt="Most Used Programming Languages" />
+  <img src="https://github-readme-stats.anuraghazra1.vercel.app/api?username=Jehooooo&show_icons=true&theme=tokyonight&hide_border=true&bg_color=0d1117&title_color=26a641&icon_color=26a641&text_color=c9d1d9" height="175" alt="GitHub Stats" />
 </p>
 
 <p align="left">
-  <img src="https://streak-stats.demolab.com?user=Jehooooo&theme=tokyonight&hide_border=true" height="180" alt="GitHub Streak Stats" />
+  <img src="https://streak-stats.demolab.com?user=Jehooooo&theme=tokyonight&hide_border=true" height="175" alt="GitHub Streak Stats" />
 </p>
 
 ---
