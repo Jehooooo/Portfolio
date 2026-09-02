@@ -77,7 +77,7 @@ export function Hero() {
           <Reveal delay={450} className="w-full">
             <div className="mt-6 flex flex-row flex-nowrap items-center justify-center lg:justify-start gap-1.5 sm:gap-2.5 md:gap-3 w-full">
               <a
-                href={profile.resumeUrl || '/documents/JehoUpdatedResume.pdf'}
+                href={profile.resumeUrl || '/documents/Jeho-Update-Resume.pdf'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-bw-primary group inline-flex items-center justify-center gap-1 sm:gap-2 rounded-xl px-2.5 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3 text-[11px] sm:text-xs md:text-sm font-semibold text-white shadow-md whitespace-nowrap shrink-0"

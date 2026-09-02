@@ -11,7 +11,7 @@ export const profile = {
   email: 'jehosuebiscarra@gmail.com',
   avatarUrl: '/images/profile.png',
   phone: '+63 9923314755',
-  resumeUrl: '/documents/JehoUpdatedResume.pdf',
+  resumeUrl: '/documents/Jeho-Update-Resume.pdf',
   // Fill in your social URLs below — leave empty to hide the icon
   githubUrl: 'https://github.com/Jehooooo',
   linkedinUrl: 'https://www.linkedin.com/in/jehosue-biscarra-447a2a25b',
