@@ -231,8 +231,8 @@ export async function POST(req: Request) {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
-          Origin: 'https://jehosue-portfolio.vercel.app',
-          Referer: 'https://jehosue-portfolio.vercel.app/',
+          Origin: 'https://jehooooo.vercel.app',
+          Referer: 'https://jehooooo.vercel.app/',
         },
         body: JSON.stringify({
           name: safeName,
