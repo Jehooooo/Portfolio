@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { MessageSquare, X, Send, Sparkles, RotateCcw } from 'lucide-react'
+import { MessageSquare, X, Send, RotateCcw } from 'lucide-react'
+import { profile } from '@/lib/portfolio-data'
 
 type Message = {
   id: string
@@ -196,7 +197,7 @@ export function AiChat() {
         <div
           ref={chatPanelRef}
           role="dialog"
-          aria-label="Chat with AI Jehosue"
+          aria-label="Chat with Jehosue"
           className="chat-panel fixed bottom-24 right-4 sm:right-6 z-50 flex flex-col rounded-3xl shadow-2xl transition-all animate-in fade-in zoom-in-95 duration-200"
           style={{
             width: 'min(400px, calc(100vw - 2rem))',
@@ -206,17 +207,20 @@ export function AiChat() {
           {/* Header */}
           <div className="chat-header flex items-center justify-between px-5 py-4 border-b border-border/50">
             <div className="flex items-center gap-3">
-              <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm">
-                <Sparkles size={16} />
-                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-background" />
+              <div className="relative h-9 w-9 shrink-0">
+                <div className="h-9 w-9 rounded-full overflow-hidden ring-1 ring-border shadow-sm bg-muted">
+                  <img
+                    src={profile.avatarUrl || '/images/profile.png'}
+                    alt={profile.name}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold tracking-tight text-foreground">
-                    AI Jehosue
-                  </span>
-                  <span className="chat-badge rounded-full px-2 py-0.5 text-[10px] font-medium">
-                    AI
+                    Jehosue
                   </span>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
