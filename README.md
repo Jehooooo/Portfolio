@@ -1,4 +1,4 @@
-# Hi, I'm Jehosue Biscarra 👋
+# Hi, I'm Jeho
 
 3rd Year BS Computer Science Student @ DMMMSU-SLUC | Full-Stack Web Developer & AI Enthusiast
 
