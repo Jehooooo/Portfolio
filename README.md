@@ -17,12 +17,12 @@
 ## 📊 Most Used Languages & GitHub Analytics
 
 <p align="left">
-  <img src="https://github-readme-stats-sigma-five.vercel.app/api/top-langs/?username=Jehooooo&layout=compact&theme=tokyonight&hide_border=true&bg_color=0d1117&title_color=26a641&text_color=c9d1d9" height="175" alt="Most Used Programming Languages" />
-  <img src="https://github-readme-stats-sigma-five.vercel.app/api?username=Jehooooo&show_icons=true&theme=tokyonight&hide_border=true&bg_color=0d1117&title_color=26a641&icon_color=26a641&text_color=c9d1d9" height="175" alt="GitHub Stats" />
+  <img src="https://github-profile-summary-cards.vercel.app/api/cards/most-commit-language?username=Jehooooo&theme=tokyonight" height="180" alt="Most Used Programming Languages" />
+  <img src="https://github-profile-summary-cards.vercel.app/api/cards/stats?username=Jehooooo&theme=tokyonight" height="180" alt="GitHub Profile Stats" />
 </p>
 
 <p align="left">
-  <img src="https://github-readme-streak-stats.herokuapp.com/?user=Jehooooo&theme=tokyonight&hide_border=true&background=0d1117&ring=26a641&fire=26a641&currStreakLabel=26a641" height="175" alt="GitHub Streak" />
+  <img src="https://streak-stats.demolab.com?user=Jehooooo&theme=tokyonight&hide_border=true" height="180" alt="GitHub Streak Stats" />
 </p>
 
 ---
