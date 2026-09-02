@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { FileText, Mail, Phone, Send, CheckCircle2, AlertCircle, Loader2, ShieldCheck } from 'lucide-react'
+import { Download, Mail, Phone, Send, CheckCircle2, AlertCircle, Loader2, ShieldCheck } from 'lucide-react'
 import { Reveal } from '@/components/reveal'
 import { profile } from '@/lib/portfolio-data'
 
@@ -211,11 +211,10 @@ export function Contact() {
             {/* Status Alert Banner */}
             {statusMessage && (
               <div
-                className={`flex items-start gap-3 rounded-2xl p-4 text-xs sm:text-sm leading-relaxed border transition-all animate-in fade-in zoom-in-95 duration-200 ${
-                  statusMessage.type === 'success'
-                    ? 'bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-300'
-                    : 'bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300'
-                }`}
+                className={`flex items-start gap-3 rounded-2xl p-4 text-xs sm:text-sm leading-relaxed border transition-all animate-in fade-in zoom-in-95 duration-200 ${statusMessage.type === 'success'
+                  ? 'bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-300'
+                  : 'bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300'
+                  }`}
               >
                 {statusMessage.type === 'success' ? (
                   <CheckCircle2 size={18} className="shrink-0 text-green-600 dark:text-green-400 mt-0.5" />
@@ -236,7 +235,7 @@ export function Contact() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Your full name"
+                placeholder="Your name"
                 disabled={loading}
                 required
                 className="w-full rounded-xl border border-border bg-card/70 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors focus:border-foreground focus:ring-1 focus:ring-foreground"
@@ -262,11 +261,10 @@ export function Contact() {
                 placeholder="your.email@example.com"
                 disabled={loading}
                 required
-                className={`w-full rounded-xl border bg-card/70 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors focus:ring-1 ${
-                  emailError
-                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                    : 'border-border focus:border-foreground focus:ring-foreground'
-                }`}
+                className={`w-full rounded-xl border bg-card/70 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors focus:ring-1 ${emailError
+                  ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                  : 'border-border focus:border-foreground focus:ring-foreground'
+                  }`}
               />
               {emailError && (
                 <p className="mt-1 text-[11px] text-red-600 dark:text-red-400 flex items-center gap-1">
@@ -285,7 +283,7 @@ export function Contact() {
                 id="contact-message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Write your message, project idea, or inquiry here..."
+                placeholder="For buisness inquiries, write your message here..."
                 rows={4}
                 disabled={loading}
                 required
@@ -297,7 +295,7 @@ export function Contact() {
             <div className="rounded-xl border border-border bg-card/50 p-4 space-y-2">
               <div className="flex items-center gap-2 mb-1">
                 <ShieldCheck size={14} className="text-foreground/60" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Bot Protection</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Verify if you&apos;re human</span>
               </div>
               <label htmlFor="contact-captcha" className="block text-sm text-muted-foreground">
                 Solve to verify you&apos;re human:&nbsp;
@@ -313,11 +311,10 @@ export function Contact() {
                 }}
                 placeholder="Your answer"
                 disabled={loading}
-                className={`w-32 rounded-lg border bg-card/70 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors focus:ring-1 ${
-                  captchaError
-                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                    : 'border-border focus:border-foreground focus:ring-foreground'
-                }`}
+                className={`w-32 rounded-lg border bg-card/70 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors focus:ring-1 ${captchaError
+                  ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                  : 'border-border focus:border-foreground focus:ring-foreground'
+                  }`}
               />
               {captchaError && (
                 <p className="text-[11px] text-red-600 dark:text-red-400 flex items-center gap-1">
@@ -350,12 +347,13 @@ export function Contact() {
               {profile.resumeUrl && (
                 <a
                   href={profile.resumeUrl}
+                  download="Jehosue_Biscarra_Resume.pdf"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card/60 px-5 py-3 text-sm font-medium text-foreground transition-all duration-200 hover:border-foreground/30 hover:bg-card"
                 >
-                  <FileText size={16} />
-                  <span>View Resume</span>
+                  <Download size={16} />
+                  <span>Download Resume</span>
                 </a>
               )}
             </div>
