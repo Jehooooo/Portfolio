@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: ai-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --threads 4
+    healthCheckPath: /api/db-status
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: jehosue_ai
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ADMIN_SECRET
+        sync: false
+      - key: ENABLE_RLS
+        value: "true"
