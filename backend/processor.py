@@ -38,6 +38,8 @@ CANDIDATE_MODELS = [
     'gemini-3-flash-preview',
     'gemini-3.6-flash',
     'gemini-3.5-flash',
+    'gemini-3.7-flash',
+    'gemini-3.8-flash-lite'
 ]
 
 # Seconds to wait between each conversation to avoid rate limit (429)

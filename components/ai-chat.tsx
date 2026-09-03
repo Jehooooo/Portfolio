@@ -24,6 +24,84 @@ const WELCOME_MESSAGE: Message = {
     "Hey! I'm Jehosue 👋. Ask me anything about my projects, skills, experience, or what I'm currently learning!",
 }
 
+/** Parses inline markdown (**bold**, *italic*) */
+function formatInline(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={i} className="font-semibold text-foreground">
+          {part.slice(2, -2)}
+        </strong>
+      )
+    }
+    if (part.startsWith('*') && part.endsWith('*')) {
+      return <em key={i}>{part.slice(1, -1)}</em>
+    }
+    return part
+  })
+}
+
+/** Parses markdown blocks (paragraphs, bullet lists, numbered lists, headings) */
+function FormattedMessage({ content }: { content: string }) {
+  if (!content) return null
+
+  const blocks = content.split(/\n\n+/)
+
+  return (
+    <div className="space-y-2">
+      {blocks.map((block, idx) => {
+        const lines = block.trim().split('\n')
+
+        // Bullet lists
+        if (lines.length > 0 && lines.every((line) => /^[*-]\s+/.test(line.trim()))) {
+          return (
+            <ul key={idx} className="list-disc pl-4 space-y-1 my-1">
+              {lines.map((line, lIdx) => {
+                const cleanLine = line.trim().replace(/^[*-]\s+/, '')
+                return <li key={lIdx}>{formatInline(cleanLine)}</li>
+              })}
+            </ul>
+          )
+        }
+
+        // Numbered lists
+        if (lines.length > 0 && lines.every((line) => /^\d+\.\s+/.test(line.trim()))) {
+          return (
+            <ol key={idx} className="list-decimal pl-4 space-y-1 my-1">
+              {lines.map((line, lIdx) => {
+                const cleanLine = line.trim().replace(/^\d+\.\s+/, '')
+                return <li key={lIdx}>{formatInline(cleanLine)}</li>
+              })}
+            </ol>
+          )
+        }
+
+        // Headings
+        if (/^###\s+/.test(block.trim())) {
+          return (
+            <h4 key={idx} className="font-semibold text-sm mt-1 text-foreground">
+              {formatInline(block.trim().replace(/^###\s+/, ''))}
+            </h4>
+          )
+        }
+
+        // Standard paragraph
+        return (
+          <p key={idx} className="leading-relaxed">
+            {lines.map((line, lIdx) => (
+              <span key={lIdx}>
+                {lIdx > 0 && <br />}
+                {formatInline(line)}
+              </span>
+            ))}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
 export function AiChat() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE])
@@ -264,7 +342,13 @@ export function AiChat() {
                     : 'chat-bubble-assistant'
                     }`}
                 >
-                  {message.content || (
+                  {message.content ? (
+                    message.role === 'assistant' ? (
+                      <FormattedMessage content={message.content} />
+                    ) : (
+                      message.content
+                    )
+                  ) : (
                     <span className="typing-indicator">
                       <span />
                       <span />
