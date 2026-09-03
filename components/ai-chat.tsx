@@ -251,20 +251,19 @@ export function AiChat() {
         id="ai-chat-fab"
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`chat-fab fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all duration-300 ${isOpen
-          ? 'rotate-90 bg-white/10 backdrop-blur-md border border-white/20'
-          : 'hover:scale-105 active:scale-95'
-          }`}
+        className={`chat-fab chat-fab-glow fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#1c1815] text-[#f9f0e0] dark:bg-white dark:text-[#0a0a0a] shadow-2xl border border-black/10 dark:border-white/30 transition-all duration-300 hover:scale-110 active:scale-95 ${
+          isOpen ? 'rotate-90' : ''
+        }`}
         aria-label={isOpen ? 'Close AI chat' : 'Open AI chat'}
       >
         {isOpen ? (
-          <X size={22} className="text-foreground" />
+          <X size={22} className="text-[#f9f0e0] dark:text-[#0a0a0a]" />
         ) : (
-          <div className="relative">
-            <MessageSquare size={22} className="text-white dark:text-black" />
+          <div className="relative flex items-center justify-center">
+            <MessageSquare size={22} className="text-[#f9f0e0] dark:text-[#0a0a0a]" />
             <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 ring-2 ring-[#1c1815] dark:ring-white" />
             </span>
           </div>
         )}
