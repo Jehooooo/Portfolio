@@ -8,7 +8,7 @@ from google import genai
 from google.genai import types
 
 from config import GEMINI_API_KEY, PORT, ADMIN_SECRET, ENABLE_RLS
-from db import get_conversations_collection, get_knowledge_collection, get_db
+from db import get_conversations_collection, get_knowledge_collection, get_db, check_db_status
 from knowledge_base import build_system_instruction
 from processor import process_unprocessed_conversations
 from query_params import (
@@ -421,6 +421,14 @@ def update_knowledge_status():
         return jsonify(trim_response({"success": True, "id": sanitize_str(raw_id, max_length=128), "status": new_status}))
     except Exception as e:
         return jsonify(trim_response({"error": "Failed to update knowledge status."})), 500
+
+
+@app.route('/api/db-status', methods=['GET'])
+def db_status_endpoint():
+    """Diagnostic endpoint to inspect MongoDB Atlas connection health."""
+    status = check_db_status()
+    code = 200 if status.get("connected") else 503
+    return jsonify(trim_response(status)), code
 
 
 if __name__ == '__main__':

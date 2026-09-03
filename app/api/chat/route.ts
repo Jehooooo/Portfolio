@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai'
 import { getSystemInstruction } from '@/lib/jehosue-knowledge'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import { getDatabase } from '@/lib/mongodb'
 import {
   validateRequestHeaders,
   validateSessionId,
@@ -8,6 +9,34 @@ import {
   escapeHtml,
   trimApiResponse,
 } from '@/lib/security'
+
+/** Asynchronously logs chat conversation to MongoDB */
+async function saveConversation(data: {
+  sessionId: string
+  visitorMessage: string
+  aiResponse: string
+  model: string
+}) {
+  try {
+    const db = await getDatabase()
+    if (!db) return
+
+    await db.collection('conversations').insertOne({
+      session_id: data.sessionId,
+      visitor_message: data.visitorMessage,
+      ai_response: data.aiResponse,
+      timestamp: new Date().toISOString(),
+      processed: false,
+      processing_status: 'pending',
+      metadata: {
+        model: data.model,
+        source: 'nextjs-serverless',
+      },
+    })
+  } catch (err) {
+    console.warn('[MongoDB] Background conversation logging failed:', err)
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -160,6 +189,7 @@ export async function POST(request: Request) {
     ]
 
     let response = null
+    let usedModel = 'gemini-3.5-flash-lite'
     let lastErr = null
 
     for (const model of candidateModels) {
@@ -174,6 +204,7 @@ export async function POST(request: Request) {
           },
           contents: [...geminiHistory, { role: 'user', parts: [{ text: lastMessage }] }],
         })
+        usedModel = model
         break
       } catch (err) {
         lastErr = err
@@ -188,16 +219,30 @@ export async function POST(request: Request) {
     }
 
     const encoder = new TextEncoder()
+    let fullResponseText = ''
     const stream = new ReadableStream({
       async start(controller) {
         try {
           for await (const chunk of response) {
             const text = chunk.text
             if (text) {
+              fullResponseText += text
               controller.enqueue(encoder.encode(text))
             }
           }
           controller.close()
+
+          // Log conversation to MongoDB
+          if (fullResponseText.trim()) {
+            saveConversation({
+              sessionId,
+              visitorMessage: lastMessage,
+              aiResponse: fullResponseText.trim(),
+              model: usedModel,
+            }).catch((err) => {
+              console.warn('[MongoDB] Save conversation background error:', err)
+            })
+          }
         } catch (err) {
           controller.error(err)
         }

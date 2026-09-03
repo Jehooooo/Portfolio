@@ -79,8 +79,12 @@ After deploying to Vercel and the VPS, database queries (saving conversations, r
 
 | # | Task | Target File(s) | Status |
 |---|---|---|---|
-| 1 | Diversify AI System Prompt & Tone | `lib/jehosue-knowledge.ts` | ⏳ Pending |
-| 2 | Mirror Persona to Backend Knowledge Base | `backend/knowledge_base.py` | ⏳ Pending |
-| 3 | Whitelist `0.0.0.0/0` on MongoDB Atlas | MongoDB Atlas Console | ⏳ Pending |
-| 4 | Confirm Vercel Environment Variables | Vercel Project Settings | ⏳ Pending |
-| 5 | Verify Live Chat & Conversation Logging | `https://jehooooo.vercel.app` | ⏳ Pending |
+| 1 | Diversify AI System Prompt & Tone | `lib/jehosue-knowledge.ts` | ✅ Completed |
+| 2 | Mirror Persona to Backend Knowledge Base | `backend/knowledge_base.py` | ✅ Completed |
+| 3 | Serverless Cached MongoDB Client Helper | `lib/mongodb.ts` | ✅ Completed |
+| 4 | Diagnostic Health-Check API Routes | `app/api/db-check/route.ts`, `backend/app.py` | ✅ Completed |
+| 5 | Persist Conversations on Vercel Fallback | `app/api/chat/route.ts` | ✅ Completed |
+| 6 | Automatic MongoDB Reconnect & Logging | `backend/db.py`, `backend/requirements.txt` | ✅ Completed |
+| 7 | Whitelist `0.0.0.0/0` on MongoDB Atlas | MongoDB Atlas Console | ⏳ User Action |
+| 8 | Confirm Vercel Environment Variables | Vercel Project Settings | ⏳ User Action |
+| 9 | Verify Live Chat & Conversation Logging | `https://jehooooo.vercel.app` | ⏳ Pending Redeploy |
