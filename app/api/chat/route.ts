@@ -8,6 +8,8 @@ import {
   validateString,
   escapeHtml,
   trimApiResponse,
+  sanitizeVisitorPrompt,
+  sanitizeAiOutput,
 } from '@/lib/security'
 
 /** Asynchronously logs chat conversation to MongoDB */
@@ -120,7 +122,7 @@ export async function POST(request: Request) {
       const role = roleValidation.sanitized === 'user' ? 'user' : 'model'
       validatedMessages.push({
         role,
-        content: contentValidation.sanitized,
+        content: sanitizeVisitorPrompt(contentValidation.sanitized),
       })
     }
 
@@ -166,8 +168,9 @@ export async function POST(request: Request) {
       if (pyRes.ok) {
         const pyData = await pyRes.json()
         if (pyData.response && typeof pyData.response === 'string') {
-          // 17. Trim API response string
-          return new Response(pyData.response.trim(), {
+          // 17. Trim API response string & sanitize model leaks
+          const cleanOutput = sanitizeAiOutput(pyData.response.trim())
+          return new Response(cleanOutput, {
             headers: { 'Content-Type': 'text/plain; charset=utf-8' },
           })
         }
@@ -269,12 +272,13 @@ export async function POST(request: Request) {
           }
           controller.close()
 
-          // Log conversation to MongoDB
+          // Log conversation to MongoDB with safety sanitization
           if (fullResponseText.trim()) {
+            const cleanAiText = sanitizeAiOutput(fullResponseText.trim())
             saveConversation({
               sessionId,
               visitorMessage: lastMessage,
-              aiResponse: fullResponseText.trim(),
+              aiResponse: cleanAiText,
               model: usedModel,
             }).catch((err) => {
               console.warn('[MongoDB] Save conversation background error:', err)

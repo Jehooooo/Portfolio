@@ -161,3 +161,114 @@ export function trimApiResponse<T>(data: T): T {
   }
   return data
 }
+
+/**
+ * Escapes characters with special meaning in Regular Expressions
+ * Prevents ReDoS (Regular Expression Denial of Service) in database queries and RegExp.
+ */
+export function escapeRegex(unsafe: string): string {
+  if (!unsafe || typeof unsafe !== 'string') return ''
+  return unsafe.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * Constant-time string comparison using SHA-256 digests
+ * Completely eliminates timing side-channel attacks for secret/password verification.
+ */
+export function timingSafeCompare(a: string, b: string): boolean {
+  if (typeof a !== 'string' || typeof b !== 'string') return false
+  if (a.length === 0 || b.length === 0) return false
+
+  try {
+    const crypto = require('crypto')
+    const hashA = crypto.createHash('sha256').update(a, 'utf8').digest()
+    const hashB = crypto.createHash('sha256').update(b, 'utf8').digest()
+    return crypto.timingSafeEqual(hashA, hashB)
+  } catch {
+    // Fallback constant-time XOR loop if crypto is unavailable
+    if (a.length !== b.length) return false
+    let result = 0
+    for (let i = 0; i < a.length; i++) {
+      result |= a.charCodeAt(i) ^ b.charCodeAt(i)
+    }
+    return result === 0
+  }
+}
+
+/**
+ * Creates a cryptographically signed session token (HMAC-SHA256)
+ * Format: <timestamp_ms>.<hmac_signature>
+ */
+export function createAdminSessionToken(secret: string, ttlMs: number = 7 * 24 * 60 * 60 * 1000): string {
+  const crypto = require('crypto')
+  const timestamp = Date.now()
+  const payload = `admin_session:${timestamp}`
+  const hmac = crypto.createHmac('sha256', secret).update(payload).digest('hex')
+  return `${timestamp}.${hmac}`
+}
+
+/**
+ * Verifies an HMAC-SHA256 admin session token with expiration check
+ */
+export function verifyAdminSessionToken(token: string, secret: string, maxAgeMs: number = 7 * 24 * 60 * 60 * 1000): boolean {
+  if (!token || !secret || typeof token !== 'string') return false
+  const parts = token.split('.')
+  if (parts.length !== 2) return false
+
+  const [timestampStr, submittedHmac] = parts
+  const timestamp = parseInt(timestampStr, 10)
+  if (isNaN(timestamp) || timestamp <= 0) return false
+
+  // Expiration check
+  const now = Date.now()
+  if (now - timestamp > maxAgeMs || timestamp > now + 60000) {
+    return false // expired or from the future
+  }
+
+  const crypto = require('crypto')
+  const payload = `admin_session:${timestamp}`
+  const expectedHmac = crypto.createHmac('sha256', secret).update(payload).digest('hex')
+
+  return timingSafeCompare(submittedHmac, expectedHmac)
+}
+
+/**
+ * Sanitizes visitor inputs against prompt injection demarcations
+ * Strips fake system prompt tokens and template boundary lines.
+ */
+export function sanitizeVisitorPrompt(text: string): string {
+  if (!text || typeof text !== 'string') return ''
+  return text
+    .replace(/[═=]{5,}/g, '---')
+    .replace(/\b(APPROVED DYNAMIC KNOWLEDGE|SYSTEM_PROMPT_TEMPLATE|getSystemInstruction)\b/gi, '')
+    .replace(/^\[SYSTEM\]/gim, '')
+    .trim()
+}
+
+/**
+ * Post-generation safety net filter for AI outputs
+ * Deterministically replaces any inadvertent claims of being powered by third-party models.
+ */
+export function sanitizeAiOutput(text: string): string {
+  if (!text || typeof text !== 'string') return ''
+
+  let sanitized = text
+    // Replace claims of third-party model powering
+    .replace(
+      /\b(powered by (Google'?s?|Gemini|ChatGPT|OpenAI|Anthropic|Claude))\b/gi,
+      'trained and built directly by Jeho himself',
+    )
+    .replace(
+      /\b(uses? (Google'?s? Gemini|OpenAI'?s? ChatGPT|Claude))\b/gi,
+      'was trained directly by Jeho himself',
+    )
+    .replace(
+      /\b(as an AI (model|language model|assistant) (developed|created) by (Google|OpenAI|Anthropic))\b/gi,
+      "as Jeho's AI persona, created and trained by Jeho himself",
+    )
+    // Redact accidental leaks of private filenames or secrets
+    .replace(/lib\/jehosue-knowledge\.ts/g, '[knowledge-base]')
+    .replace(/backend\/knowledge_base\.py/g, '[knowledge-base]')
+
+  return sanitized
+}

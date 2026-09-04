@@ -1,6 +1,6 @@
 import { verifyAdminAuth } from '@/lib/admin-auth'
 import { getDatabase } from '@/lib/mongodb'
-import { trimApiResponse } from '@/lib/security'
+import { trimApiResponse, escapeRegex } from '@/lib/security'
 import { ObjectId, Filter } from 'mongodb'
 
 export const dynamic = 'force-dynamic'
@@ -40,9 +40,12 @@ export async function GET(request: Request) {
 
   try {
     const url = new URL(request.url)
-    const search = (url.searchParams.get('search') || '').trim()
-    const sessionId = (url.searchParams.get('sessionId') || '').trim()
-    const status = url.searchParams.get('status') || 'all'
+    const rawSearch = (url.searchParams.get('search') || '').trim().slice(0, 100)
+    const search = escapeRegex(rawSearch)
+    const rawSessionId = (url.searchParams.get('sessionId') || '').trim().slice(0, 100)
+    const sessionId = escapeRegex(rawSessionId)
+    const rawStatus = url.searchParams.get('status') || 'all'
+    const status = ['all', 'pending', 'processed', 'failed'].includes(rawStatus) ? rawStatus : 'all'
     const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit') || '30', 10), 1), 100)
     const page = Math.max(parseInt(url.searchParams.get('page') || '1', 10), 1)
     const skip = (page - 1) * limit

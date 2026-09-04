@@ -3,37 +3,40 @@ import {
   getProcessingStats,
 } from '@/lib/knowledge-processor'
 import { getDatabase } from '@/lib/mongodb'
-import { trimApiResponse } from '@/lib/security'
+import { trimApiResponse, timingSafeCompare } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
 
 function checkAuth(req: Request): boolean {
-  const adminSecret = process.env.ADMIN_SECRET
-  const adminPassword = process.env.ADMIN_PASSWORD
-  const cronSecret = process.env.CRON_SECRET
+  const adminSecret = process.env.ADMIN_SECRET || ''
+  const adminPassword = process.env.ADMIN_PASSWORD || ''
+  const cronSecret = process.env.CRON_SECRET || ''
 
-  // In development, allow testing without a secret
-  if (process.env.NODE_ENV === 'development') {
+  // If no secrets are configured and in development mode, permit access for testing
+  if (!adminSecret && !adminPassword && !cronSecret && process.env.NODE_ENV === 'development') {
     return true
   }
 
-  // If none is set, allow (or log warning)
+  // If none is set, forbid access
   if (!adminSecret && !adminPassword && !cronSecret) {
-    return true
+    return false
   }
 
   const authHeader = req.headers.get('authorization') || ''
   const xAdminSecret = req.headers.get('x-admin-secret') || ''
+  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : ''
 
-  if (adminPassword && (xAdminSecret === adminPassword || authHeader === `Bearer ${adminPassword}`)) {
-    return true
+  if (adminPassword) {
+    if (xAdminSecret && timingSafeCompare(xAdminSecret, adminPassword)) return true
+    if (bearerToken && timingSafeCompare(bearerToken, adminPassword)) return true
   }
 
-  if (adminSecret && (xAdminSecret === adminSecret || authHeader === `Bearer ${adminSecret}`)) {
-    return true
+  if (adminSecret) {
+    if (xAdminSecret && timingSafeCompare(xAdminSecret, adminSecret)) return true
+    if (bearerToken && timingSafeCompare(bearerToken, adminSecret)) return true
   }
 
-  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+  if (cronSecret && bearerToken && timingSafeCompare(bearerToken, cronSecret)) {
     return true
   }
 
@@ -74,10 +77,17 @@ export async function POST(request: Request) {
 
 /**
  * GET /api/process-data
- * Returns processing pipeline statistics, pending counts, and recent logs.
+ * Returns processing pipeline statistics, pending counts, and recent logs (requires admin/cron auth).
  */
 export async function GET(request: Request) {
   try {
+    if (!checkAuth(request)) {
+      return Response.json(
+        trimApiResponse({ error: 'Forbidden: Valid admin or cron authorization required.' }),
+        { status: 403 },
+      )
+    }
+
     const url = new URL(request.url)
     const action = url.searchParams.get('action')
 

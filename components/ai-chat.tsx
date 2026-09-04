@@ -132,13 +132,35 @@ export function AiChat() {
     }
     setSessionId(sid)
 
-    // Restore persistent chat history from localStorage
+    // Restore persistent chat history from localStorage with strict validation
     try {
       const saved = localStorage.getItem('ai_jehosue_chat_history')
       if (saved) {
         const parsed = JSON.parse(saved)
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setMessages(parsed)
+          const validated: Message[] = parsed
+            .filter(
+              (m: unknown): m is Message =>
+                Boolean(
+                  m &&
+                    typeof m === 'object' &&
+                    'role' in m &&
+                    ('role' in m ? m.role === 'user' || m.role === 'assistant' : false) &&
+                    'content' in m &&
+                    typeof (m as { content: unknown }).content === 'string' &&
+                    (m as { content: string }).content.trim().length > 0,
+                ),
+            )
+            .slice(-50) // Bound to last 50 messages to prevent memory exhaustion
+            .map((m, idx) => ({
+              id: typeof m.id === 'string' && m.id ? m.id.slice(0, 64) : `hist-${idx}`,
+              role: m.role,
+              content: m.content.slice(0, 8192), // Cap maximum message size
+            }))
+
+          if (validated.length > 0) {
+            setMessages(validated)
+          }
         }
       }
     } catch (err) {
@@ -146,10 +168,12 @@ export function AiChat() {
     }
   }, [])
 
-  // Persist messages to localStorage when idle
+  // Persist messages to localStorage when idle (bounded to last 50 items)
   useEffect(() => {
     if (!isLoading && messages.length > 0) {
-      const toStore = messages.filter((m) => m.content.trim().length > 0)
+      const toStore = messages
+        .filter((m) => m.content.trim().length > 0)
+        .slice(-50)
       if (toStore.length > 0) {
         try {
           localStorage.setItem('ai_jehosue_chat_history', JSON.stringify(toStore))

@@ -14,9 +14,10 @@ MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017')
 MONGODB_DB_NAME = os.getenv('MONGODB_DB_NAME', 'jehosue_ai')
 PORT = int(os.getenv('PORT', '5000'))
 
-# ADMIN_SECRET must be set via environment variable - no hardcoded fallback
-ADMIN_SECRET = os.getenv('ADMIN_SECRET', '')
+# ADMIN_SECRET / ADMIN_PASSWORD must be set via environment variable - no hardcoded fallback
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', '')
+ADMIN_SECRET = os.getenv('ADMIN_SECRET', '') or ADMIN_PASSWORD
 if not ADMIN_SECRET:
-    print('[Security] WARNING: ADMIN_SECRET is not set. Admin endpoints will be disabled.', file=sys.stderr)
+    print('[Security] WARNING: Neither ADMIN_SECRET nor ADMIN_PASSWORD is set. Admin endpoints will be disabled.', file=sys.stderr)
 
 ENABLE_RLS = os.getenv('ENABLE_RLS', 'true').lower() in ('true', '1', 'yes')

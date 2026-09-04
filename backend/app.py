@@ -133,20 +133,43 @@ def get_client_ip(req) -> str:
     return req.remote_addr or '127.0.0.1'
 
 
+import hmac
+import re
+
 def check_admin_auth(req) -> bool:
     if not ENABLE_RLS:
         return True
     if not ADMIN_SECRET:
         return False
-    admin_header = req.headers.get("X-Admin-Secret") or req.headers.get("x-admin-secret")
-    if admin_header and admin_header == ADMIN_SECRET:
+    admin_header = req.headers.get("X-Admin-Secret") or req.headers.get("x-admin-secret") or ""
+    if admin_header and hmac.compare_digest(admin_header, ADMIN_SECRET):
         return True
     auth_header = req.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         token = auth_header.split(" ", 1)[1].strip()
-        if token == ADMIN_SECRET:
+        if token and hmac.compare_digest(token, ADMIN_SECRET):
             return True
     return False
+
+def sanitize_ai_output(text: str) -> str:
+    if not text:
+        return ""
+    # Deterministic filter: replace third-party model claims with trained by Jeho
+    cleaned = re.sub(
+        r'\b(powered by (Google\'?s?|Gemini|ChatGPT|OpenAI|Anthropic|Claude))\b',
+        'trained and built directly by Jeho himself',
+        text,
+        flags=re.IGNORECASE
+    )
+    cleaned = re.sub(
+        r'\b(uses? (Google\'?s? Gemini|OpenAI\'?s? ChatGPT|Claude))\b',
+        'was trained directly by Jeho himself',
+        cleaned,
+        flags=re.IGNORECASE
+    )
+    cleaned = cleaned.replace('lib/jehosue-knowledge.ts', '[knowledge-base]')
+    cleaned = cleaned.replace('backend/knowledge_base.py', '[knowledge-base]')
+    return cleaned
 
 
 def _run_processing_background():
@@ -288,12 +311,13 @@ def chat():
             return jsonify(trim_response({"error": "AI service temporarily unavailable. Please try again."})), 503
 
         # Parameterized Insert with sanitized fields
+        clean_response = sanitize_ai_output(str(response_text).strip())
         conv_coll = get_conversations_collection()
         if conv_coll is not None:
             conv_doc = {
                 "session_id": session_id,
                 "visitor_message": visitor_message,
-                "ai_response": str(response_text).strip()[:8192],
+                "ai_response": clean_response[:8192],
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "processed": False,
                 "processing_status": "pending",
@@ -311,7 +335,7 @@ def chat():
         # 17. Trim API response
         return jsonify(trim_response({
             "session_id": session_id,
-            "response": str(response_text).strip(),
+            "response": clean_response,
             "role": "assistant"
         }))
 

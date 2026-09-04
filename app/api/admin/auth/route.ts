@@ -1,15 +1,33 @@
 import { cookies } from 'next/headers'
 import { verifyAdminAuth } from '@/lib/admin-auth'
-import { trimApiResponse } from '@/lib/security'
+import {
+  trimApiResponse,
+  timingSafeCompare,
+  createAdminSessionToken,
+} from '@/lib/security'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * POST /api/admin/auth
- * Verifies secret and sets admin_session cookie
+ * Verifies secret with rate limiting and sets an HMAC-signed admin_session cookie
  */
 export async function POST(request: Request) {
   try {
+    // 1. Rate Limiting: Max 5 login attempts per minute per IP
+    const clientIp = getClientIp(request)
+    const rateLimit = checkRateLimit(`admin-login:${clientIp}`, 5, 60 * 1000)
+
+    if (!rateLimit.allowed) {
+      return Response.json(
+        trimApiResponse({
+          error: `Too many login attempts. Please slow down and try again in ${rateLimit.resetTime}s.`,
+        }),
+        { status: 429, headers: { 'Retry-After': String(rateLimit.resetTime) } },
+      )
+    }
+
     let body: Record<string, unknown> = {}
     try {
       body = await request.json()
@@ -33,22 +51,25 @@ export async function POST(request: Request) {
       )
     }
 
+    // 2. Timing-safe constant-time comparison
     const isValid =
-      (configuredPassword && submitted === configuredPassword) ||
-      (configuredSecret && submitted === configuredSecret)
+      (configuredPassword && timingSafeCompare(submitted, configuredPassword)) ||
+      (configuredSecret && timingSafeCompare(submitted, configuredSecret))
 
     if (!isValid) {
       return Response.json(
-        trimApiResponse({ error: 'Invalid admin password.' }),
+        trimApiResponse({ error: 'Invalid admin credentials.' }),
         { status: 401 },
       )
     }
 
-    const sessionToken = configuredSecret || configuredPassword || 'admin_session_authenticated'
+    // 3. Cryptographically signed HMAC session token
+    const authKey = configuredSecret || configuredPassword
+    const signedSessionToken = createAdminSessionToken(authKey)
 
     // Set secure HTTP-only cookie
     const cookieStore = await cookies()
-    cookieStore.set('admin_session', sessionToken, {
+    cookieStore.set('admin_session', signedSessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -60,7 +81,6 @@ export async function POST(request: Request) {
       trimApiResponse({
         success: true,
         message: 'Authentication successful.',
-        token: sessionToken,
       }),
     )
   } catch (error) {
