@@ -1,7 +1,16 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { MessageSquare, X, Send, RotateCcw } from 'lucide-react'
+import {
+  MessageSquare,
+  X,
+  Send,
+  RotateCcw,
+  Copy,
+  Check,
+  FolderKanban,
+  ArrowUpRight,
+} from 'lucide-react'
 import { profile } from '@/lib/portfolio-data'
 
 type Message = {
@@ -108,6 +117,7 @@ export function AiChat() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string>('')
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const chatPanelRef = useRef<HTMLDivElement>(null)
@@ -121,7 +131,34 @@ export function AiChat() {
       }
     }
     setSessionId(sid)
+
+    // Restore persistent chat history from localStorage
+    try {
+      const saved = localStorage.getItem('ai_jehosue_chat_history')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed)
+        }
+      }
+    } catch (err) {
+      console.warn('Could not restore chat history', err)
+    }
   }, [])
+
+  // Persist messages to localStorage when idle
+  useEffect(() => {
+    if (!isLoading && messages.length > 0) {
+      const toStore = messages.filter((m) => m.content.trim().length > 0)
+      if (toStore.length > 0) {
+        try {
+          localStorage.setItem('ai_jehosue_chat_history', JSON.stringify(toStore))
+        } catch {
+          // Ignore quota errors
+        }
+      }
+    }
+  }, [messages, isLoading])
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -238,7 +275,20 @@ export function AiChat() {
     }
   }
 
+  const handleCopy = (id: string, text: string) => {
+    if (!text || typeof navigator === 'undefined') return
+    navigator.clipboard.writeText(text)
+    setCopiedMessageId(id)
+    setTimeout(() => setCopiedMessageId(null), 2000)
+  }
+
   const resetChat = () => {
+    const newSid = `session-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
+    setSessionId(newSid)
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('ai_jehosue_session_id', newSid)
+      localStorage.removeItem('ai_jehosue_chat_history')
+    }
     setMessages([WELCOME_MESSAGE])
   }
 
@@ -342,11 +392,62 @@ export function AiChat() {
                     }`}
                 >
                   {message.content ? (
-                    message.role === 'assistant' ? (
-                      <FormattedMessage content={message.content} />
-                    ) : (
-                      message.content
-                    )
+                    <>
+                      {message.role === 'assistant' ? (
+                        <FormattedMessage content={message.content} />
+                      ) : (
+                        message.content
+                      )}
+
+                      {/* Interactive Actions & Copy for Assistant Messages */}
+                      {message.role === 'assistant' && (
+                        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-border/40 pt-2 text-[11px] text-muted-foreground">
+                          {/* Project Jump Pill */}
+                          {/(dmmmsu|disaster|emergency reports|incident)/i.test(
+                            message.content,
+                          ) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                window.dispatchEvent(
+                                  new CustomEvent('open-project', {
+                                    detail: { id: 'dmmmsu-disaster-system' },
+                                  }),
+                                )
+                              }}
+                              className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-medium text-emerald-600 transition-colors hover:bg-emerald-500/20 dark:text-emerald-400"
+                              title="Open DMMMSU Project Modal"
+                            >
+                              <FolderKanban size={12} />
+                              <span>View DMMMSU Project</span>
+                              <ArrowUpRight size={11} />
+                            </button>
+                          )}
+
+                          {/* 1-Click Copy Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(message.id, message.content)}
+                            className="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
+                            title="Copy response to clipboard"
+                          >
+                            {copiedMessageId === message.id ? (
+                              <>
+                                <Check size={12} className="text-emerald-500" />
+                                <span className="text-[10px] font-medium text-emerald-500">
+                                  Copied
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={12} />
+                                <span className="text-[10px]">Copy</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <span className="typing-indicator">
                       <span />

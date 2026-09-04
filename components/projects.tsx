@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ProjectCard } from '@/components/project-card'
 import { ProjectModal } from '@/components/project-modal'
 import { Reveal } from '@/components/reveal'
@@ -8,6 +8,21 @@ import { projects, type Project } from '@/lib/portfolio-data'
 
 export function Projects() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+
+  useEffect(() => {
+    const handleOpenProject = (e: Event) => {
+      const customEvent = e as CustomEvent<{ id?: string }>
+      const targetId = customEvent.detail?.id || 'dmmmsu-disaster-system'
+      const found = projects.find((p) => p.id === targetId) || projects[0]
+      if (found) {
+        setSelectedProject(found)
+        document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })
+      }
+    }
+
+    window.addEventListener('open-project', handleOpenProject)
+    return () => window.removeEventListener('open-project', handleOpenProject)
+  }, [])
 
   return (
     <section
