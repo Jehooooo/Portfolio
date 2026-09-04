@@ -149,7 +149,7 @@ export function generateSocialImage() {
             }}
           >
             Engineering resilient full-stack applications, distributed MongoDB Atlas architectures,
-            and continuous conversational learning pipelines powered by Google Gemini.
+            and custom conversational AI pipelines trained by Jeho.
           </p>
         </div>
 
@@ -171,7 +171,7 @@ export function generateSocialImage() {
               gap: '10px',
             }}
           >
-            {['Next.js 16', 'TypeScript', 'Python', 'MongoDB Atlas', 'Google Gemini'].map(
+            {['Next.js 16', 'TypeScript', 'Python', 'MongoDB Atlas', 'Conversational AI'].map(
               (tech) => (
                 <div
                   key={tech}

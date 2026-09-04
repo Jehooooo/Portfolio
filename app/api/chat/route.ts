@@ -181,7 +181,7 @@ export async function POST(request: Request) {
 
     if (!apiKey || apiKey === 'your_api_key_here' || apiKey.trim() === '') {
       return Response.json(
-        trimApiResponse({ error: 'Gemini AI service is not configured.' }),
+        trimApiResponse({ error: 'AI chat service is temporarily unavailable.' }),
         { status: 503 },
       )
     }
