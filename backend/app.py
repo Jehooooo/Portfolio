@@ -225,6 +225,26 @@ def chat():
         if not visitor_message:
             return jsonify(trim_response({"error": "Visitor message cannot be empty."})), 400
 
+        # Easter Egg Check: if visitor mentions "Cha" or "charizh"
+        import re
+        if re.search(r'\b(cha|charizh)\b', visitor_message, re.IGNORECASE):
+            easter_egg = "whoops,  what are you trying to breakin"
+            conv_coll = get_conversations_collection()
+            if conv_coll is not None:
+                try:
+                    conv_coll.insert_one({
+                        "session_id": session_id,
+                        "visitor_message": visitor_message,
+                        "ai_response": easter_egg,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "processed": False,
+                        "processing_status": "pending",
+                        "metadata": {"model": "easter-egg-rule", "source": "flask-backend"},
+                    })
+                except Exception:
+                    pass
+            return jsonify(trim_response({"response": easter_egg})), 200
+
         # Build Gemini history
         gemini_history = []
         for msg in messages[:-1]:

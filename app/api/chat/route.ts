@@ -133,6 +133,23 @@ export async function POST(request: Request) {
 
     const lastMessage = validatedMessages[validatedMessages.length - 1].content
 
+    // Easter Egg: If visitor mentions "Cha" or "charizh" (case-insensitive)
+    if (/\b(cha|charizh)\b/i.test(lastMessage)) {
+      const easterEggText = 'whoops,  what are you trying to breakin'
+      saveConversation({
+        sessionId,
+        visitorMessage: lastMessage,
+        aiResponse: easterEggText,
+        model: 'easter-egg-rule',
+      }).catch((err) => {
+        console.warn('[MongoDB] Background easter egg log failed:', err)
+      })
+
+      return new Response(easterEggText, {
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      })
+    }
+
     // 1. Try forwarding request to Python Flask backend
     const pythonBackendUrl = process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:5000'
     try {
@@ -176,7 +193,27 @@ export async function POST(request: Request) {
       parts: [{ text: msg.content }],
     }))
 
-    const systemInstruction = getSystemInstruction()
+    // Retrieve approved dynamic knowledge from MongoDB
+    let dynamicKnowledge = ''
+    try {
+      const db = await getDatabase()
+      if (db) {
+        const approvedDocs = await db
+          .collection('knowledge')
+          .find({ status: 'approved' }, { projection: { category: 1, information: 1, _id: 0 } })
+          .limit(60)
+          .toArray()
+        if (approvedDocs.length > 0) {
+          dynamicKnowledge = approvedDocs
+            .map((doc) => `- [${doc.category || 'general'}] ${doc.information}`)
+            .join('\n')
+        }
+      }
+    } catch (dbErr) {
+      console.warn('[MongoDB] Dynamic knowledge fetch skipped:', dbErr)
+    }
+
+    const systemInstruction = getSystemInstruction(dynamicKnowledge)
 
     const candidateModels = [
       'gemini-3.5-flash-lite',
