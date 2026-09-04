@@ -38,6 +38,17 @@ export type FeatureDetail = {
   details: string[]
 }
 
+export type ArchitectureDetail = {
+  layer: string
+  items: string[]
+}
+
+export type DatabaseTable = {
+  tableName: string
+  description: string
+  columns: string[]
+}
+
 export type DetailedTech = {
   category: string
   tech: string
@@ -59,7 +70,10 @@ export type Project = {
   technologies: string[]
   detailedTech?: DetailedTech[]
   workflow?: WorkflowStep[]
-  features?: FeatureDetail[]
+  features?: Array<string | FeatureDetail>
+  architecture?: ArchitectureDetail[]
+  databaseSchema?: DatabaseTable[]
+  security?: string[]
   role: string
   categories: ProjectCategory[]
   status: ProjectStatus
