@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic'
 
 function checkAuth(req: Request): boolean {
   const adminSecret = process.env.ADMIN_SECRET
+  const adminPassword = process.env.ADMIN_PASSWORD
   const cronSecret = process.env.CRON_SECRET
 
   // In development, allow testing without a secret
@@ -16,13 +17,17 @@ function checkAuth(req: Request): boolean {
     return true
   }
 
-  // If neither secret is set, allow (or log warning)
-  if (!adminSecret && !cronSecret) {
+  // If none is set, allow (or log warning)
+  if (!adminSecret && !adminPassword && !cronSecret) {
     return true
   }
 
   const authHeader = req.headers.get('authorization') || ''
   const xAdminSecret = req.headers.get('x-admin-secret') || ''
+
+  if (adminPassword && (xAdminSecret === adminPassword || authHeader === `Bearer ${adminPassword}`)) {
+    return true
+  }
 
   if (adminSecret && (xAdminSecret === adminSecret || authHeader === `Bearer ${adminSecret}`)) {
     return true

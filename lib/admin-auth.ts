@@ -9,20 +9,24 @@ import { cookies } from 'next/headers'
  */
 export async function verifyAdminAuth(request: Request): Promise<boolean> {
   const adminSecret = process.env.ADMIN_SECRET || ''
+  const adminPassword = process.env.ADMIN_PASSWORD || ''
 
-  // If no ADMIN_SECRET is set in development, permit access with a warning
-  if (!adminSecret && process.env.NODE_ENV === 'development') {
+  // If neither is set in development, permit access
+  if (!adminSecret && !adminPassword && process.env.NODE_ENV === 'development') {
     return true
   }
 
-  if (!adminSecret) {
+  const validTokens = new Set(
+    [adminSecret, adminPassword, 'admin_session_authenticated'].filter(Boolean),
+  )
+  if (validTokens.size === 0) {
     return false
   }
 
   // 1. Check x-admin-secret header
   const headerSecret =
     request.headers.get('x-admin-secret') || request.headers.get('X-Admin-Secret')
-  if (headerSecret && headerSecret === adminSecret) {
+  if (headerSecret && validTokens.has(headerSecret)) {
     return true
   }
 
@@ -30,7 +34,7 @@ export async function verifyAdminAuth(request: Request): Promise<boolean> {
   const authHeader = request.headers.get('authorization') || ''
   if (authHeader.startsWith('Bearer ')) {
     const token = authHeader.slice(7).trim()
-    if (token === adminSecret) {
+    if (validTokens.has(token)) {
       return true
     }
   }
@@ -39,14 +43,14 @@ export async function verifyAdminAuth(request: Request): Promise<boolean> {
   try {
     const cookieStore = await cookies()
     const sessionCookie = cookieStore.get('admin_session')?.value
-    if (sessionCookie && sessionCookie === adminSecret) {
+    if (sessionCookie && validTokens.has(sessionCookie)) {
       return true
     }
   } catch {
     // Fallback: parse cookie header manually
     const rawCookie = request.headers.get('cookie') || ''
     const match = rawCookie.match(/(?:^|;\s*)admin_session=([^;]+)/)
-    if (match && decodeURIComponent(match[1]) === adminSecret) {
+    if (match && validTokens.has(decodeURIComponent(match[1]))) {
       return true
     }
   }

@@ -111,7 +111,7 @@ export default function AdminPage() {
       const res = await fetch('/api/admin/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret: secretInput }),
+        body: JSON.stringify({ secret: secretInput, password: secretInput }),
       })
 
       const data = await res.json()
@@ -119,7 +119,7 @@ export default function AdminPage() {
         setAuthenticated(true)
         setSecretInput('')
       } else {
-        setLoginError(data.error || 'Authentication failed. Please check your secret key.')
+        setLoginError(data.error || 'Authentication failed. Please check your admin password.')
       }
     } catch {
       setLoginError('Network error while connecting to authentication service.')
@@ -197,25 +197,25 @@ export default function AdminPage() {
               JEHO // AI ADMIN
             </h1>
             <p className="mt-1 text-xs text-muted-foreground">
-              Enter your <span className="font-mono text-foreground font-semibold">ADMIN_SECRET</span> to access moderation & metrics.
+              Enter your <span className="font-mono text-foreground font-semibold">Admin Password</span> to access moderation & metrics.
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
             <div className="space-y-1.5">
               <label
-                htmlFor="admin-secret"
+                htmlFor="admin-password"
                 className="block font-mono text-[11px] uppercase tracking-wider text-muted-foreground"
               >
-                Secret Key
+                Admin Password
               </label>
               <div className="relative">
                 <input
-                  id="admin-secret"
+                  id="admin-password"
                   type={showSecret ? 'text' : 'password'}
                   value={secretInput}
                   onChange={(e) => setSecretInput(e.target.value)}
-                  placeholder="Enter secret key..."
+                  placeholder="Enter your admin password..."
                   required
                   autoFocus
                   className="w-full rounded-xl border border-border bg-background px-3 py-2 pr-10 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-foreground/40 focus:outline-none focus:ring-1 focus:ring-foreground/20"
@@ -224,7 +224,7 @@ export default function AdminPage() {
                   type="button"
                   onClick={() => setShowSecret(!showSecret)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  aria-label={showSecret ? 'Hide secret' : 'Show secret'}
+                  aria-label={showSecret ? 'Hide password' : 'Show password'}
                 >
                   {showSecret ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
@@ -261,7 +261,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Top Bar */}
       <AdminHeader
-        dbLatencyMs={stats?.database.latencyMs}
+        dbLatencyMs={stats?.database?.latencyMs}
         onRunProcessor={handleRunProcessor}
         onLogout={handleLogout}
         isProcessing={isProcessing}
@@ -281,7 +281,7 @@ export default function AdminPage() {
               totalFactsCount: 0,
             }
           }
-          latencyMs={stats?.database.latencyMs}
+          latencyMs={stats?.database?.latencyMs}
           onSelectTab={setActiveTab}
         />
 

@@ -20,28 +20,35 @@ export async function POST(request: Request) {
       )
     }
 
-    const secret = String(body.secret || '').trim()
+    const submitted = String(body.password || body.secret || '').trim()
+    const configuredPassword = process.env.ADMIN_PASSWORD || ''
     const configuredSecret = process.env.ADMIN_SECRET || ''
 
-    if (!configuredSecret) {
+    if (!configuredPassword && !configuredSecret) {
       return Response.json(
         trimApiResponse({
-          error: 'ADMIN_SECRET is not configured in server environment variables.',
+          error: 'Neither ADMIN_PASSWORD nor ADMIN_SECRET is configured in server environment variables.',
         }),
         { status: 500 },
       )
     }
 
-    if (secret !== configuredSecret) {
+    const isValid =
+      (configuredPassword && submitted === configuredPassword) ||
+      (configuredSecret && submitted === configuredSecret)
+
+    if (!isValid) {
       return Response.json(
-        trimApiResponse({ error: 'Invalid admin secret key.' }),
+        trimApiResponse({ error: 'Invalid admin password.' }),
         { status: 401 },
       )
     }
 
+    const sessionToken = configuredSecret || configuredPassword || 'admin_session_authenticated'
+
     // Set secure HTTP-only cookie
     const cookieStore = await cookies()
-    cookieStore.set('admin_session', configuredSecret, {
+    cookieStore.set('admin_session', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -53,7 +60,7 @@ export async function POST(request: Request) {
       trimApiResponse({
         success: true,
         message: 'Authentication successful.',
-        token: configuredSecret,
+        token: sessionToken,
       }),
     )
   } catch (error) {
