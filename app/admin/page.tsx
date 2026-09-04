@@ -14,11 +14,13 @@ import {
   ArrowLeft,
   CheckCircle2,
   RefreshCw,
+  Mail,
 } from 'lucide-react'
 import { AdminHeader } from '@/components/admin/admin-header'
 import { AdminStatsGrid } from '@/components/admin/admin-stats-grid'
 import { KnowledgeQueue } from '@/components/admin/knowledge-queue'
 import { ConversationViewer } from '@/components/admin/conversation-viewer'
+import { MessagesViewer } from '@/components/admin/messages-viewer'
 import { ThemeToggle } from '@/components/theme-toggle'
 
 interface AdminStatsData {
@@ -34,6 +36,8 @@ interface AdminStatsData {
     approvedFactsCount: number
     rejectedFactsCount: number
     totalFactsCount: number
+    totalContactMessages?: number
+    unreadContactMessages?: number
   }
   recentLogs: Array<{
     _id: string
@@ -54,7 +58,7 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState<string | null>(null)
   const [loginLoading, setLoginLoading] = useState(false)
 
-  const [activeTab, setActiveTab] = useState<'knowledge' | 'conversations' | 'logs'>('knowledge')
+  const [activeTab, setActiveTab] = useState<'messages' | 'knowledge' | 'conversations' | 'logs'>('messages')
   const [stats, setStats] = useState<AdminStatsData | null>(null)
   const [statsLoading, setStatsLoading] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -290,11 +294,29 @@ export default function AdminPage() {
 
         {/* Section Navigation Tabs */}
         <div className="flex items-center justify-between border-b border-border/80 pb-2">
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => setActiveTab('messages')}
+              className={`flex items-center gap-2 border-b-2 px-3 py-2 font-mono text-xs font-semibold transition-all shrink-0 ${
+                activeTab === 'messages'
+                  ? 'border-foreground text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Mail size={14} />
+              <span>Contact Inquiries</span>
+              {stats?.metrics.unreadContactMessages ? (
+                <span className="rounded-full bg-rose-500/20 px-2 py-0.2 text-[10px] text-rose-500 font-bold">
+                  {stats.metrics.unreadContactMessages}
+                </span>
+              ) : null}
+            </button>
+
             <button
               type="button"
               onClick={() => setActiveTab('knowledge')}
-              className={`flex items-center gap-2 border-b-2 px-3 py-2 font-mono text-xs font-semibold transition-all ${
+              className={`flex items-center gap-2 border-b-2 px-3 py-2 font-mono text-xs font-semibold transition-all shrink-0 ${
                 activeTab === 'knowledge'
                   ? 'border-foreground text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -312,7 +334,7 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => setActiveTab('conversations')}
-              className={`flex items-center gap-2 border-b-2 px-3 py-2 font-mono text-xs font-semibold transition-all ${
+              className={`flex items-center gap-2 border-b-2 px-3 py-2 font-mono text-xs font-semibold transition-all shrink-0 ${
                 activeTab === 'conversations'
                   ? 'border-foreground text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -330,7 +352,7 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => setActiveTab('logs')}
-              className={`flex items-center gap-2 border-b-2 px-3 py-2 font-mono text-xs font-semibold transition-all ${
+              className={`flex items-center gap-2 border-b-2 px-3 py-2 font-mono text-xs font-semibold transition-all shrink-0 ${
                 activeTab === 'logs'
                   ? 'border-foreground text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -354,6 +376,10 @@ export default function AdminPage() {
         </div>
 
         {/* Tab Content */}
+        {activeTab === 'messages' && (
+          <MessagesViewer />
+        )}
+
         {activeTab === 'knowledge' && (
           <KnowledgeQueue onStatusChange={fetchStats} />
         )}

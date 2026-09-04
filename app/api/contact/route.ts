@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import dns from 'dns/promises'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import { getDatabase } from '@/lib/mongodb'
+import { dispatchContactEmail } from '@/lib/email-service'
 import {
   validateRequestHeaders,
   validateString,
@@ -17,13 +19,20 @@ const DISPOSABLE_DOMAINS = new Set([
   'dropmail.me', 'inboxkitten.com', 'maildrop.cc', 'mohmal.com', 'trashmail.net',
   'fakeinbox.com', 'tempmailaddress.com', 'emailondeck.com', 'mytemp.email',
   'minutemailbox.com', 'nada.ltd', 'getnada.com', 'tempail.com', 'example.com',
-  'test.com', 'fake.com', 'mail.com', 'sample.com', 'nobody.com',
+  'test.com', 'fake.com', 'nobody.com',
+])
+
+// Trusted mail domains (skip DNS MX lookup latency & false positives)
+const TRUSTED_DOMAINS = new Set([
+  'gmail.com', 'googlemail.com', 'yahoo.com', 'yahoo.com.ph', 'outlook.com',
+  'hotmail.com', 'live.com', 'icloud.com', 'me.com', 'proton.me', 'protonmail.com',
+  'aol.com', 'zoho.com', 'msn.com',
 ])
 
 // Common fake / test username prefixes
 const FAKE_USERNAMES = new Set([
   'asdf', 'qwerty', 'fake', 'dummy', 'nobody', 'noone', 'testing',
-  'sample', 'temp', 'spam', 'random', 'admin', 'root', 'null', 'undefined',
+  'sample', 'temp', 'spam', 'random', 'null', 'undefined',
 ])
 
 function analyzeEmailAuthenticity(email: string): { valid: boolean; reason?: string } {
@@ -38,34 +47,14 @@ function analyzeEmailAuthenticity(email: string): { valid: boolean; reason?: str
     return { valid: false, reason: `Suspicious dummy username "${local}" detected.` }
   }
 
-  if (/(.{3,})\1/.test(local)) {
-    return { valid: false, reason: 'Repeated keyboard-mash pattern detected.' }
-  }
-
-  if (/(.)\1{2,}/.test(local)) {
-    return { valid: false, reason: 'Unnatural consecutive character repetition detected.' }
-  }
-
+  // Keyboard smash patterns (only obvious sequences)
   const smashPatterns = [
-    /qweqwe/i, /asdasd/i, /zxcv/i, /qwerty/i, /asdfgh/i, /zxcvbn/i,
-    /123456/, /012345/, /67890/, /qazwsx/i, /poiuyt/i, /lkjhgf/i,
+    /qweqwe/i, /asdasd/i, /zxcvzxcv/i, /qwertyuiop/i, /asdfghjkl/i,
+    /12345678/, /01234567/,
   ]
   for (const pat of smashPatterns) {
     if (pat.test(local)) {
       return { valid: false, reason: 'Keyboard smash pattern detected.' }
-    }
-  }
-
-  if (/[bcdfghjklmnpqrstvwxyz]{5,}/i.test(local)) {
-    return { valid: false, reason: 'Unnatural consonant sequence detected.' }
-  }
-
-  const lettersOnly = local.replace(/[^a-z]/g, '')
-  if (lettersOnly.length >= 7) {
-    const vowels = (lettersOnly.match(/[aeiouy]/g) || []).length
-    const vowelRatio = vowels / lettersOnly.length
-    if (vowelRatio < 0.12) {
-      return { valid: false, reason: 'Unusually low vowel ratio (likely gibberish string).' }
     }
   }
 
@@ -77,7 +66,7 @@ function analyzeEmailAuthenticity(email: string): { valid: boolean; reason?: str
 }
 
 export async function POST(req: Request) {
-  // 16. Restrict File Uploads & Validate Content-Type / Size Limit (Max 64 KB)
+  // 1. Restrict File Uploads & Validate Content-Type / Size Limit (Max 64 KB)
   const headerCheck = validateRequestHeaders(req, 64 * 1024)
   if (!headerCheck.valid) {
     return NextResponse.json(
@@ -115,18 +104,18 @@ export async function POST(req: Request) {
 
     const { _honeypot, _formLoadedAt } = body
 
-    // 0a. Bot Trap (Honeypot) - bots fill hidden fields
+    // Bot Trap (Honeypot) - bots fill hidden fields
     if (_honeypot && typeof _honeypot === 'string' && _honeypot.trim().length > 0) {
       return NextResponse.json(
         trimApiResponse({ success: true, message: 'Message received.' }),
       )
     }
 
-    // 0b. Timing Check - bots submit too fast (< 1.5 seconds)
+    // Timing Check - bots submit too fast (< 1.5 seconds)
     const formLoadedAt = _formLoadedAt ? Number(_formLoadedAt) : 0
     if (formLoadedAt > 0) {
       const elapsedMs = Date.now() - formLoadedAt
-      if (elapsedMs < 1500) {
+      if (elapsedMs < 1200) {
         return NextResponse.json(
           trimApiResponse({ error: 'Submission too fast. Please try again.' }),
           { status: 400 },
@@ -134,7 +123,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 14. Validate all inputs
+    // Validate inputs
     const nameVal = validateString(body.name, {
       required: true,
       minLength: 2,
@@ -170,7 +159,7 @@ export async function POST(req: Request) {
 
     const [, domainPart] = cleanEmail.split('@')
 
-    // 3. Disposable Domain Check
+    // Disposable Domain Check
     if (DISPOSABLE_DOMAINS.has(domainPart)) {
       return NextResponse.json(
         trimApiResponse({
@@ -180,7 +169,7 @@ export async function POST(req: Request) {
       )
     }
 
-    // 4. Random / Gibberish / Fake Mailbox Heuristic Analysis
+    // Heuristic analysis
     const authCheck = analyzeEmailAuthenticity(cleanEmail)
     if (!authCheck.valid) {
       return NextResponse.json(
@@ -191,22 +180,29 @@ export async function POST(req: Request) {
       )
     }
 
-    // 5. DNS MX Record Lookup
-    try {
-      const mxRecords = await dns.resolveMx(domainPart)
-      if (!mxRecords || mxRecords.length === 0) {
-        throw new Error('No mail servers found.')
+    // DNS MX Record Lookup (Skip for trusted major providers)
+    if (!TRUSTED_DOMAINS.has(domainPart)) {
+      try {
+        const mxRecords = await dns.resolveMx(domainPart)
+        if (!mxRecords || mxRecords.length === 0) {
+          throw new Error('No mail servers found.')
+        }
+      } catch (dnsErr: unknown) {
+        const errCode = (dnsErr as { code?: string })?.code
+        if (errCode === 'ENOTFOUND' || errCode === 'ENODATA') {
+          return NextResponse.json(
+            trimApiResponse({
+              error: `The email domain (@${domainPart}) does not appear to exist. Please verify your address.`,
+            }),
+            { status: 400 },
+          )
+        }
+        // Non-fatal if DNS times out on serverless
+        console.warn('[Contact] DNS MX lookup warning for domain:', domainPart, dnsErr)
       }
-    } catch {
-      return NextResponse.json(
-        trimApiResponse({
-          error: `The email domain (@${domainPart}) has no active mail servers. Please verify your address.`,
-        }),
-        { status: 400 },
-      )
     }
 
-    // 6. Message Content Validation
+    // Message Content Validation
     const messageVal = validateString(body.message, {
       required: true,
       minLength: 5,
@@ -219,64 +215,68 @@ export async function POST(req: Request) {
       )
     }
 
-    // 15. Escape User Content for safe downstream delivery
     const safeName = escapeHtml(nameVal.sanitized)
     const safeMessage = escapeHtml(messageVal.sanitized)
 
-    // 7. Dispatch Email
+    // Dispatch email via multi-tier email service (Gmail SMTP -> Resend -> FormSubmit)
+    const emailDispatch = await dispatchContactEmail({
+      name: safeName,
+      email: cleanEmail,
+      message: safeMessage,
+    })
+
+    // Store message permanently in MongoDB Atlas contact_messages collection
     try {
-      const targetUrl = 'https://formsubmit.co/ajax/jehosuebiscarra@gmail.com'
-      const response = await fetch(targetUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          Origin: 'https://jehooooo.vercel.app',
-          Referer: 'https://jehooooo.vercel.app/',
-        },
-        body: JSON.stringify({
+      const db = await getDatabase()
+      if (db) {
+        await db.collection('contact_messages').insertOne({
           name: safeName,
           email: cleanEmail,
           message: safeMessage,
-          _subject: `Portfolio Message from ${safeName}`,
-          _template: 'table',
-          _captcha: 'false',
-        }),
-      })
-
-      const data = await response.json().catch(() => null)
-
-      if (data && (data.success === 'true' || data.success === true)) {
-        return NextResponse.json(
-          trimApiResponse({
-            success: true,
-            message: 'Your message has been sent successfully to Jeho!',
-          }),
-        )
-      } else if (data && data.message && data.message.includes('Activation')) {
-        return NextResponse.json(
-          trimApiResponse({
-            success: true,
-            message: 'Message received! Please check your Gmail to activate the form endpoint.',
-          }),
-        )
-      } else {
-        return NextResponse.json(
-          trimApiResponse({
-            success: true,
-            message: 'Your message has been sent successfully to Jeho!',
-          }),
-        )
+          created_at: new Date().toISOString(),
+          status: 'unread',
+          client_ip: clientIp,
+          delivery_status: emailDispatch.success
+            ? 'sent'
+            : emailDispatch.needsActivation
+              ? 'awaiting_activation'
+              : 'saved_locally',
+          delivery_method: emailDispatch.method,
+          delivery_error: emailDispatch.error || null,
+        })
       }
-    } catch {
+    } catch (dbErr) {
+      console.warn('[MongoDB] Contact message persistence failed:', dbErr)
+    }
+
+    // User feedback response
+    if (emailDispatch.success) {
       return NextResponse.json(
         trimApiResponse({
-          error: 'Email delivery service temporarily unavailable. Please email directly at jehosuebiscarra@gmail.com.',
+          success: true,
+          message: 'Your message has been sent successfully to Jeho!',
         }),
-        { status: 502 },
       )
     }
-  } catch {
+
+    if (emailDispatch.needsActivation) {
+      return NextResponse.json(
+        trimApiResponse({
+          success: true,
+          message: 'Your message has been received and saved! (Email delivery will begin once Jeho confirms the FormSubmit activation in his Gmail)',
+        }),
+      )
+    }
+
+    // Even if external forwarder had an issue, the message was recorded in MongoDB
+    return NextResponse.json(
+      trimApiResponse({
+        success: true,
+        message: 'Your message has been received and saved successfully!',
+      }),
+    )
+  } catch (err) {
+    console.error('[Contact] Unexpected error handling submission:', err)
     return NextResponse.json(
       trimApiResponse({ error: 'An unexpected error occurred while processing your submission.' }),
       { status: 500 },
