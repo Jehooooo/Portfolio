@@ -44,10 +44,11 @@ export const metadata: Metadata = {
   publisher: 'Jehosue Biscarra',
   icons: {
     icon: [
-      { url: '/images/icon.svg', type: 'image/svg+xml' },
-      { url: '/images/icon-dark-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/images/profile.png', type: 'image/png' },
+      { url: '/icon.png', type: 'image/png' },
     ],
-    apple: [{ url: '/images/apple-icon.png', sizes: '180x180', type: 'image/png' }],
+    apple: [{ url: '/images/profile.png', sizes: '180x180', type: 'image/png' }],
+    shortcut: ['/images/profile.png'],
   },
   openGraph: {
     type: 'website',

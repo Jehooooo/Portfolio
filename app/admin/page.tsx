@@ -139,6 +139,8 @@ export default function AdminPage() {
     setStats(null)
   }
 
+  const [conversationRefreshKey, setConversationRefreshKey] = useState(0)
+
   // 5. Trigger Pipeline
   const handleRunProcessor = async () => {
     setIsProcessing(true)
@@ -151,8 +153,9 @@ export default function AdminPage() {
         const err = await res.json()
         throw new Error(err.error || 'Processing failed')
       }
-      // Refresh stats & queue
+      // Refresh stats & queue & conversations
       await fetchStats()
+      setConversationRefreshKey((k) => k + 1)
     } finally {
       setIsProcessing(false)
     }
@@ -356,7 +359,7 @@ export default function AdminPage() {
         )}
 
         {activeTab === 'conversations' && (
-          <ConversationViewer />
+          <ConversationViewer key={conversationRefreshKey} />
         )}
 
         {activeTab === 'logs' && (

@@ -109,12 +109,19 @@
     background-color: var(--background);
     color: var(--foreground);
     overflow-x: hidden;
-    transition: background-color 0.4s ease, color 0.4s ease;
+    transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
   html {
     scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
   }
+}
+
+/* View Transitions API smooth theme crossfade */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.2s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @layer utilities {
@@ -123,7 +130,7 @@
     backdrop-filter: blur(16px) saturate(160%);
     -webkit-backdrop-filter: blur(16px) saturate(160%);
     border: 1px solid rgba(255,255,255,0.14);
-    transition: background 0.4s ease, border-color 0.4s ease;
+    transition: background 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
   
   .glass-strong {
@@ -131,7 +138,7 @@
     backdrop-filter: blur(24px) saturate(170%);
     -webkit-backdrop-filter: blur(24px) saturate(170%);
     border: 1px solid rgba(255,255,255,0.18);
-    transition: background 0.4s ease, border-color 0.4s ease;
+    transition: background 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .text-gradient {
@@ -212,7 +219,7 @@
   box-shadow: 0 4px 16px rgba(0,0,0,0.08);
 }
 
-/* Ambient background glow */
+/* Ambient background glow with GPU-accelerated opacity cross-fade */
 .page-glow {
   position: fixed;
   inset: 0;
@@ -222,14 +229,23 @@
     radial-gradient(750px circle at 50% 12%, rgba(255,255,255,0.04), transparent 65%),
     radial-gradient(600px circle at 15% 45%, rgba(255,255,255,0.03), transparent 60%),
     radial-gradient(700px circle at 85% 70%, rgba(255,255,255,0.03), transparent 65%);
-  transition: background 0.4s ease;
 }
 
-:root:not(.dark) .page-glow {
+.page-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
   background:
     radial-gradient(750px circle at 50% 12%, rgba(210, 190, 160, 0.25), transparent 65%),
     radial-gradient(600px circle at 15% 45%, rgba(200, 180, 150, 0.18), transparent 60%),
     radial-gradient(700px circle at 85% 70%, rgba(220, 200, 170, 0.2), transparent 65%);
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+:root:not(.dark) .page-glow::after {
+  opacity: 1;
 }
 
 /* Profile Picture Glow & Hover Container */

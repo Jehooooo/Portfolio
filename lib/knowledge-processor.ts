@@ -169,9 +169,10 @@ function parseGeminiJson(rawText: string): Array<{
 export async function processUnprocessedConversations(options?: {
   trigger?: 'cron' | 'manual' | 'api'
   limit?: number
+  conversationId?: string
 }): Promise<ProcessingResult> {
   const trigger = options?.trigger || 'manual'
-  const limit = options?.limit || 20
+  const limit = options?.limit || 30
 
   const db = await getDatabase()
   if (!db) {
@@ -199,15 +200,50 @@ export async function processUnprocessedConversations(options?: {
   const knowColl = db.collection('knowledge')
   const logColl = db.collection('processing_logs')
 
-  // Query for pending conversations
-  const query = {
-    $or: [
-      { processing_status: 'pending' },
-      { processing_status: { $exists: false }, processed: false },
-    ],
+  // Auto-recover stale 'processing' conversations that were locked > 5 minutes ago or on server crash
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+  try {
+    await convColl.updateMany(
+      {
+        processing_status: 'processing',
+        $or: [
+          { locked_at: { $lt: fiveMinutesAgo } },
+          { locked_at: { $exists: false } },
+        ],
+      },
+      {
+        $set: {
+          processing_status: 'pending',
+          processed: false,
+        },
+      },
+    )
+  } catch {
+    // Non-critical recovery attempt
   }
 
-  const unprocessed = await convColl.find(query).limit(limit).toArray()
+  let unprocessed: Array<Record<string, unknown>> = []
+
+  if (options?.conversationId) {
+    try {
+      const targetId = new ObjectId(options.conversationId)
+      const single = await convColl.findOne({ _id: targetId })
+      if (single) unprocessed = [single as Record<string, unknown>]
+    } catch {
+      // invalid ObjectId
+    }
+  } else {
+    // Query for pending conversations
+    const query = {
+      $or: [
+        { processing_status: 'pending' },
+        { processing_status: { $exists: false }, processed: false },
+        { processed: false, processing_status: { $nin: ['processing', 'completed'] } },
+      ],
+    }
+
+    unprocessed = (await convColl.find(query).limit(limit).toArray()) as Array<Record<string, unknown>>
+  }
 
   if (unprocessed.length === 0) {
     return {
@@ -226,9 +262,9 @@ export async function processUnprocessedConversations(options?: {
 
   for (const conv of unprocessed) {
     const convId = conv._id as ObjectId
-    const visitorMsg = conv.visitor_message || ''
-    const aiResp = conv.ai_response || ''
-    const sessionId = conv.session_id || 'unknown'
+    const visitorMsg = typeof conv.visitor_message === 'string' ? conv.visitor_message : ''
+    const aiResp = typeof conv.ai_response === 'string' ? conv.ai_response : ''
+    const sessionId = typeof conv.session_id === 'string' ? conv.session_id : 'unknown'
 
     // Skip blank conversations
     if (!visitorMsg && !aiResp) {
@@ -248,7 +284,7 @@ export async function processUnprocessedConversations(options?: {
     // Lock conversation to prevent race conditions
     await convColl.updateOne(
       { _id: convId },
-      { $set: { processing_status: 'processing' } },
+      { $set: { processing_status: 'processing', locked_at: new Date().toISOString() } },
     )
 
     try {

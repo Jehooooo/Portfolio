@@ -4,39 +4,32 @@ import {
 } from '@/lib/knowledge-processor'
 import { getDatabase } from '@/lib/mongodb'
 import { trimApiResponse, timingSafeCompare } from '@/lib/security'
+import { verifyAdminAuth } from '@/lib/admin-auth'
 
 export const dynamic = 'force-dynamic'
 
-function checkAuth(req: Request): boolean {
-  const adminSecret = process.env.ADMIN_SECRET || ''
-  const adminPassword = process.env.ADMIN_PASSWORD || ''
+async function checkAuth(req: Request): Promise<boolean> {
+  // 1. Check if authenticated as admin (covers cookies, x-admin-secret, Bearer token)
+  const isAdmin = await verifyAdminAuth(req)
+  if (isAdmin) return true
+
+  // 2. Check CRON_SECRET for automated background cron triggers
   const cronSecret = process.env.CRON_SECRET || ''
-
-  // If no secrets are configured and in development mode, permit access for testing
-  if (!adminSecret && !adminPassword && !cronSecret && process.env.NODE_ENV === 'development') {
-    return true
+  if (cronSecret) {
+    const authHeader = req.headers.get('authorization') || ''
+    const xCronSecret = req.headers.get('x-cron-secret') || ''
+    const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : ''
+    if (bearerToken && timingSafeCompare(bearerToken, cronSecret)) return true
+    if (xCronSecret && timingSafeCompare(xCronSecret, cronSecret)) return true
   }
 
-  // If none is set, forbid access
-  if (!adminSecret && !adminPassword && !cronSecret) {
-    return false
-  }
-
-  const authHeader = req.headers.get('authorization') || ''
-  const xAdminSecret = req.headers.get('x-admin-secret') || ''
-  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : ''
-
-  if (adminPassword) {
-    if (xAdminSecret && timingSafeCompare(xAdminSecret, adminPassword)) return true
-    if (bearerToken && timingSafeCompare(bearerToken, adminPassword)) return true
-  }
-
-  if (adminSecret) {
-    if (xAdminSecret && timingSafeCompare(xAdminSecret, adminSecret)) return true
-    if (bearerToken && timingSafeCompare(bearerToken, adminSecret)) return true
-  }
-
-  if (cronSecret && bearerToken && timingSafeCompare(bearerToken, cronSecret)) {
+  // 3. If no secrets are configured in development mode, permit access for local testing
+  if (
+    !process.env.ADMIN_SECRET &&
+    !process.env.ADMIN_PASSWORD &&
+    !cronSecret &&
+    process.env.NODE_ENV === 'development'
+  ) {
     return true
   }
 
@@ -49,16 +42,35 @@ function checkAuth(req: Request): boolean {
  */
 export async function POST(request: Request) {
   try {
-    if (!checkAuth(request)) {
+    const authorized = await checkAuth(request)
+    if (!authorized) {
       return Response.json(
         trimApiResponse({ error: 'Forbidden: Valid admin or cron authorization required.' }),
         { status: 403 },
       )
     }
 
+    let bodyLimit: number | undefined
+    let conversationId: string | undefined
+    try {
+      const body = await request.json()
+      if (body && typeof body === 'object') {
+        if (typeof body.limit === 'number') bodyLimit = body.limit
+        if (typeof body.conversationId === 'string') conversationId = body.conversationId.trim()
+      }
+    } catch {
+      // Body is optional
+    }
+
+    const url = new URL(request.url)
+    const queryLimit = parseInt(url.searchParams.get('limit') || '', 10)
+    const finalLimit = Math.min(Math.max(bodyLimit || (isNaN(queryLimit) ? 50 : queryLimit), 1), 100)
+    const targetConvId = conversationId || url.searchParams.get('conversationId') || undefined
+
     const result = await processUnprocessedConversations({
       trigger: 'api',
-      limit: 20,
+      limit: finalLimit,
+      conversationId: targetConvId,
     })
 
     return Response.json(trimApiResponse(result))
@@ -81,7 +93,8 @@ export async function POST(request: Request) {
  */
 export async function GET(request: Request) {
   try {
-    if (!checkAuth(request)) {
+    const authorized = await checkAuth(request)
+    if (!authorized) {
       return Response.json(
         trimApiResponse({ error: 'Forbidden: Valid admin or cron authorization required.' }),
         { status: 403 },

@@ -15,6 +15,9 @@ import {
   ChevronUp,
   Loader2,
   Filter,
+  Play,
+  RefreshCw,
+  Sparkles,
 } from 'lucide-react'
 
 export interface ConversationItem {
@@ -43,6 +46,9 @@ export function ConversationViewer() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [processingBatch, setProcessingBatch] = useState(false)
+  const [processingId, setProcessingId] = useState<string | null>(null)
+  const [actionToast, setActionToast] = useState<string | null>(null)
 
   const fetchConversations = useCallback(async () => {
     setLoading(true)
@@ -90,6 +96,63 @@ export function ConversationViewer() {
       })
     } catch {
       return ts
+    }
+  }
+
+  const handleProcessAllPending = async () => {
+    setProcessingBatch(true)
+    try {
+      const res = await fetch('/api/process-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: 50 }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        const count = data.processed_conversations_count || 0
+        const facts = data.extracted_items_count || 0
+        setActionToast(
+          count > 0
+            ? `Successfully processed ${count} conversations (${facts} new facts extracted)!`
+            : data.message || 'No pending conversations to process.',
+        )
+        setTimeout(() => setActionToast(null), 4500)
+        await fetchConversations()
+      } else {
+        setActionToast(`Processor error: ${data.error || 'Failed to process'}`)
+        setTimeout(() => setActionToast(null), 4500)
+      }
+    } catch {
+      setActionToast('Network error while triggering processor pipeline.')
+      setTimeout(() => setActionToast(null), 4500)
+    } finally {
+      setProcessingBatch(false)
+    }
+  }
+
+  const handleProcessSingle = async (id: string) => {
+    setProcessingId(id)
+    try {
+      const res = await fetch('/api/process-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId: id }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        const facts = data.extracted_items_count || 0
+        setActionToast(`Conversation processed! ${facts} knowledge facts extracted.`)
+        setTimeout(() => setActionToast(null), 4500)
+        await fetchConversations()
+      } else {
+        setActionToast(`Processor error: ${data.error || 'Failed to process'}`)
+        setTimeout(() => setActionToast(null), 4500)
+      }
+    } catch {
+      setActionToast('Network error while processing conversation.')
+      setTimeout(() => setActionToast(null), 4500)
+    } finally {
+      setProcessingId(null)
     }
   }
 
@@ -191,12 +254,49 @@ export function ConversationViewer() {
         </div>
       </div>
 
-      {/* Total Found */}
-      <div className="flex items-center justify-between font-mono text-xs text-muted-foreground">
-        <span>Showing {conversations.length} of {total} conversations</span>
-        {sessionIdFilter && (
-          <span className="truncate max-w-[200px]">Filtered by session: {sessionIdFilter}</span>
-        )}
+      {/* Action Notification Toast */}
+      {actionToast && (
+        <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 font-mono text-xs text-foreground shadow-xs animate-in fade-in slide-in-from-top-1">
+          {actionToast}
+        </div>
+      )}
+
+      {/* Toolbar Summary & Quick Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <span>Showing {conversations.length} of {total} conversations</span>
+          {sessionIdFilter && (
+            <span className="truncate max-w-[200px]">Filtered by session: {sessionIdFilter}</span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => fetchConversations()}
+            disabled={loading}
+            className="flex items-center gap-1 rounded-xl border border-border bg-card px-2.5 py-1 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+            title="Refresh list"
+          >
+            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleProcessAllPending}
+            disabled={processingBatch}
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1 font-medium text-foreground transition-all hover:border-foreground/30 hover:bg-secondary/60 disabled:opacity-50"
+            title="Extract facts from all pending conversations"
+          >
+            {processingBatch ? (
+              <Loader2 size={12} className="animate-spin text-foreground" />
+            ) : (
+              <Sparkles size={12} className="text-amber-500" />
+            )}
+            <span>{processingBatch ? 'Processing...' : 'Process Pending'}</span>
+          </button>
+        </div>
       </div>
 
       {/* List */}
@@ -352,6 +452,22 @@ export function ConversationViewer() {
                         >
                           Filter by Session
                         </button>
+
+                        {!isProcessed && (
+                          <button
+                            type="button"
+                            disabled={processingId === conv._id}
+                            onClick={() => handleProcessSingle(conv._id)}
+                            className="flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-amber-500 transition-colors hover:bg-amber-500/20 disabled:opacity-50"
+                          >
+                            {processingId === conv._id ? (
+                              <Loader2 size={11} className="animate-spin" />
+                            ) : (
+                              <Play size={11} />
+                            )}
+                            <span>Extract Facts Now</span>
+                          </button>
+                        )}
                       </div>
 
                       <span>ID: {conv._id}</span>

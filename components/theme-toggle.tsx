@@ -18,13 +18,33 @@ export function ThemeToggle() {
 
   const toggle = () => {
     const next = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
-    localStorage.setItem('theme', next)
-    document.documentElement.classList.toggle('dark', next === 'dark')
-    document.documentElement.classList.toggle('light', next === 'light')
+
+    const applyTheme = () => {
+      setTheme(next)
+      try {
+        localStorage.setItem('theme', next)
+      } catch {
+        // Storage disabled or private browsing
+      }
+      if (next === 'dark') {
+        document.documentElement.classList.add('dark')
+        document.documentElement.classList.remove('light')
+      } else {
+        document.documentElement.classList.remove('dark')
+        document.documentElement.classList.add('light')
+      }
+    }
+
+    if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+      (document as unknown as { startViewTransition: (cb: () => void) => void }).startViewTransition(() => {
+        applyTheme()
+      })
+    } else {
+      applyTheme()
+    }
   }
 
-  // Prevent hydration mismatch — render nothing until mounted
+  // Prevent hydration mismatch — render placeholder until mounted
   if (!mounted) {
     return <div className="h-9 w-9" />
   }
@@ -34,11 +54,11 @@ export function ThemeToggle() {
       type="button"
       onClick={toggle}
       aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground backdrop-blur-md transition-all duration-300 hover:scale-110 hover:border-primary/40 hover:text-foreground hover:shadow-md"
+      className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground backdrop-blur-md transition-transform duration-150 active:scale-90 hover:scale-105 hover:border-primary/40 hover:text-foreground"
     >
       <Sun
         size={18}
-        className={`absolute transition-all duration-300 ${
+        className={`absolute transition-transform transition-opacity duration-200 ease-out ${
           theme === 'light'
             ? 'rotate-0 scale-100 opacity-100'
             : 'rotate-90 scale-0 opacity-0'
@@ -46,7 +66,7 @@ export function ThemeToggle() {
       />
       <Moon
         size={18}
-        className={`absolute transition-all duration-300 ${
+        className={`absolute transition-transform transition-opacity duration-200 ease-out ${
           theme === 'dark'
             ? 'rotate-0 scale-100 opacity-100'
             : '-rotate-90 scale-0 opacity-0'
