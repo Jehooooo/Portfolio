@@ -1,4 +1,4 @@
-﻿import { Analytics } from '@vercel/analytics/next'
+import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
@@ -13,12 +13,69 @@ const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
 })
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://jehooooo.vercel.app'
+
 export const metadata: Metadata = {
-  title: 'Jehosue Biscarra',
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: 'Jehosue (Jeho) Biscarra | Software Engineer & AI Systems Developer',
+    template: '%s | Jehosue Biscarra',
+  },
+  description:
+    'Portfolio & interactive AI persona of Jehosue (Jeho) Biscarra — Software Engineer specializing in full-stack web applications, AI engineering, and modern cloud architecture.',
   keywords: [
     'Jehosue Biscarra',
+    'Jeho Biscarra',
+    'Software Engineer',
+    'Full Stack Developer',
+    'AI Engineer',
+    'Next.js',
+    'React',
+    'TypeScript',
+    'Python',
+    'MongoDB Atlas',
+    'Google Gemini AI',
+    'DMMMSU',
+    'Web Developer Philippines',
+    'Portfolio',
   ],
-  authors: [{ name: 'Jehosue Biscarra' }],
+  authors: [{ name: 'Jehosue Biscarra', url: siteUrl }],
+  creator: 'Jehosue Biscarra',
+  publisher: 'Jehosue Biscarra',
+  icons: {
+    icon: [
+      { url: '/images/icon.svg', type: 'image/svg+xml' },
+      { url: '/images/icon-dark-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [{ url: '/images/apple-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: siteUrl,
+    siteName: 'Jehosue Biscarra Portfolio',
+    title: 'Jehosue (Jeho) Biscarra | Software Engineer & AI Systems Developer',
+    description:
+      'Portfolio & interactive AI persona of Jehosue (Jeho) Biscarra — Software Engineer specializing in full-stack web applications, AI systems, and modern cloud architecture.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Jehosue (Jeho) Biscarra | Software Engineer & AI Systems Developer',
+    description:
+      'Portfolio & interactive AI persona of Jehosue (Jeho) Biscarra — Software Engineer specializing in full-stack web applications, AI systems, and modern cloud architecture.',
+    creator: '@jehooooo',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 }
 
 export const viewport: Viewport = {
