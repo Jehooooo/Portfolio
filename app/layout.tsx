@@ -18,14 +18,16 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://jehooooo.vercel.app
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Jehosue (Jeho) Biscarra | Software Engineer & AI Systems Developer',
+    default: 'Jehosue (Jeho) Biscarra | Full Stack Web Developer and AI Systems Developer',
     template: '%s | Jehosue Biscarra',
   },
   description:
-    'Portfolio & interactive AI persona of Jehosue (Jeho) Biscarra — Software Engineer specializing in full-stack web applications, AI engineering, and modern cloud architecture.',
+    'Portfolio & interactive AI persona of Jehosue (Jeho) Biscarra — Full Stack Web Developer and AI Systems Developer specializing in full-stack web applications, AI systems, and modern cloud architecture.',
   keywords: [
     'Jehosue Biscarra',
     'Jeho Biscarra',
+    'Full Stack Web Developer',
+    'AI Systems Developer',
     'Software Engineer',
     'Full Stack Developer',
     'AI Engineer',
@@ -55,15 +57,24 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: siteUrl,
     siteName: 'Jehosue Biscarra Portfolio',
-    title: 'Jehosue (Jeho) Biscarra | Software Engineer & AI Systems Developer',
+    title: 'Full Stack Web Developer and AI Systems Developer',
     description:
-      'Portfolio & interactive AI persona of Jehosue (Jeho) Biscarra — Software Engineer specializing in full-stack web applications, AI systems, and modern cloud architecture.',
+      'Portfolio & interactive AI persona of Jehosue (Jeho) Biscarra — Full Stack Web Developer and AI Systems Developer specializing in full-stack web applications, AI systems, and modern cloud architecture.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Full Stack Web Developer and AI Systems Developer',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Jehosue (Jeho) Biscarra | Software Engineer & AI Systems Developer',
+    title: 'Full Stack Web Developer and AI Systems Developer',
     description:
-      'Portfolio & interactive AI persona of Jehosue (Jeho) Biscarra — Software Engineer specializing in full-stack web applications, AI systems, and modern cloud architecture.',
+      'Portfolio & interactive AI persona of Jehosue (Jeho) Biscarra — Full Stack Web Developer and AI Systems Developer specializing in full-stack web applications, AI systems, and modern cloud architecture.',
+    images: ['/og-image.png'],
     creator: '@jehooooo',
   },
   robots: {
