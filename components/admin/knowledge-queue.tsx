@@ -13,6 +13,12 @@ import {
   Loader2,
   Copy,
   CheckCheck,
+  Zap,
+  SlidersHorizontal,
+  CheckSquare,
+  Square,
+  AlertCircle,
+  CheckCircle2,
 } from 'lucide-react'
 
 export interface KnowledgeItem {
@@ -61,7 +67,9 @@ const CATEGORY_COLORS: Record<string, string> = {
 export function KnowledgeQueue({ onStatusChange }: KnowledgeQueueProps) {
   const [items, setItems] = useState<KnowledgeItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState<'pending_review' | 'approved' | 'rejected' | 'all'>('pending_review')
+  const [statusFilter, setStatusFilter] = useState<
+    'pending_review' | 'approved' | 'rejected' | 'all'
+  >('pending_review')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [actionInProgress, setActionInProgress] = useState<string | null>(null)
@@ -73,6 +81,20 @@ export function KnowledgeQueue({ onStatusChange }: KnowledgeQueueProps) {
     all: 0,
   })
 
+  // Bulk selection & automation states
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [automationModalOpen, setAutomationModalOpen] = useState(false)
+  const [customThreshold, setCustomThreshold] = useState(85)
+  const [customRejectBelow, setCustomRejectBelow] = useState(60)
+  const [enableRejectBelow, setEnableRejectBelow] = useState(true)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg)
+    setTimeout(() => setToastMessage(null), 4000)
+  }
+
   const fetchItems = useCallback(async () => {
     setLoading(true)
     try {
@@ -80,7 +102,7 @@ export function KnowledgeQueue({ onStatusChange }: KnowledgeQueueProps) {
         status: statusFilter,
         category: categoryFilter,
         search,
-        limit: '60',
+        limit: '80',
       })
       const res = await fetch(`/api/admin/knowledge?${params.toString()}`)
       if (res.ok) {
@@ -99,14 +121,15 @@ export function KnowledgeQueue({ onStatusChange }: KnowledgeQueueProps) {
 
   useEffect(() => {
     fetchItems()
+    setSelectedIds(new Set())
   }, [fetchItems])
 
+  // Single Item Status Update
   const handleUpdateStatus = async (
     id: string,
     newStatus: 'approved' | 'rejected' | 'pending_review',
   ) => {
     setActionInProgress(id)
-    // Optimistic UI update
     setItems((prev) =>
       statusFilter === 'all'
         ? prev.map((item) => (item._id === id ? { ...item, status: newStatus } : item))
@@ -123,7 +146,6 @@ export function KnowledgeQueue({ onStatusChange }: KnowledgeQueueProps) {
       if (res.ok) {
         onStatusChange?.()
       } else {
-        // Rollback on failure
         fetchItems()
       }
     } catch {
@@ -133,6 +155,7 @@ export function KnowledgeQueue({ onStatusChange }: KnowledgeQueueProps) {
     }
   }
 
+  // Delete Single Item
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to permanently delete this knowledge fact?')) {
       return
@@ -153,6 +176,95 @@ export function KnowledgeQueue({ onStatusChange }: KnowledgeQueueProps) {
     }
   }
 
+  // Automated Batch Threshold Action
+  const handleAutomatedThreshold = async (
+    minConf: number,
+    rejectBelow?: number,
+  ) => {
+    setBulkLoading(true)
+    try {
+      const res = await fetch('/api/admin/knowledge/auto-moderate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'auto_threshold',
+          minConfidence: minConf / 100,
+          rejectBelow: rejectBelow !== undefined ? rejectBelow / 100 : undefined,
+          category: categoryFilter,
+        }),
+      })
+
+      const data = await res.json()
+      if (res.ok && data.success) {
+        showToast(data.message || 'Auto-moderation completed successfully!')
+        setSelectedIds(new Set())
+        await fetchItems()
+        onStatusChange?.()
+        setAutomationModalOpen(false)
+      } else {
+        showToast(data.error || 'Auto-moderation failed.')
+      }
+    } catch {
+      showToast('Error connecting to auto-moderation service.')
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
+  // Bulk Status Update on Checked Items
+  const handleBulkUpdate = async (status: 'approved' | 'rejected' | 'pending_review') => {
+    if (selectedIds.size === 0) return
+    setBulkLoading(true)
+
+    const idsArray = Array.from(selectedIds)
+    try {
+      const res = await fetch('/api/admin/knowledge/auto-moderate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'batch_status',
+          ids: idsArray,
+          status,
+        }),
+      })
+
+      const data = await res.json()
+      if (res.ok && data.success) {
+        showToast(data.message || `Updated ${idsArray.length} items to "${status}".`)
+        setSelectedIds(new Set())
+        await fetchItems()
+        onStatusChange?.()
+      } else {
+        showToast(data.error || 'Bulk update failed.')
+      }
+    } catch {
+      showToast('Error connecting to bulk update service.')
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
+  // Selection Toggles
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const handleSelectAllVisible = () => {
+    if (selectedIds.size === items.length && items.length > 0) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(items.map((i) => i._id)))
+    }
+  }
+
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text)
     setCopiedId(id)
@@ -161,6 +273,14 @@ export function KnowledgeQueue({ onStatusChange }: KnowledgeQueueProps) {
 
   return (
     <div className="space-y-5">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-card px-4 py-3 font-mono text-xs text-foreground shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2">
+          <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       {/* Top Filter Bar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Status Tabs */}
@@ -259,26 +379,86 @@ export function KnowledgeQueue({ onStatusChange }: KnowledgeQueueProps) {
         </div>
       </div>
 
-      {/* Category Pills */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground mr-1">
-          <Filter size={12} /> Category:
-        </span>
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat}
-            type="button"
-            onClick={() => setCategoryFilter(cat)}
-            className={`rounded-lg px-2.5 py-1 font-mono text-[11px] capitalize transition-colors ${
-              categoryFilter === cat
-                ? 'bg-secondary text-foreground font-semibold border border-border'
-                : 'text-muted-foreground hover:bg-secondary/40 hover:text-foreground'
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
+      {/* Category Pills & Automation Toolbar */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-y border-border/60 py-3">
+        {/* Category Pills */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground mr-1">
+            <Filter size={12} /> Category:
+          </span>
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setCategoryFilter(cat)}
+              className={`rounded-lg px-2.5 py-1 font-mono text-[11px] capitalize transition-colors ${
+                categoryFilter === cat
+                  ? 'bg-secondary text-foreground font-semibold border border-border'
+                  : 'text-muted-foreground hover:bg-secondary/40 hover:text-foreground'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Automation Quick Actions */}
+        {statusFilter === 'pending_review' && (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={bulkLoading || counts.pending_review === 0}
+              onClick={() => handleAutomatedThreshold(85, 60)}
+              className="flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 font-mono text-xs font-semibold text-emerald-600 transition-all hover:bg-emerald-500 hover:text-white disabled:opacity-50 dark:text-emerald-400 dark:hover:text-black"
+              title="Automatically approve facts with >= 85% confidence and reject facts with < 60% confidence"
+            >
+              {bulkLoading ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Zap size={13} className="fill-current" />
+              )}
+              <span>Auto-Approve (≥85%)</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={bulkLoading || counts.pending_review === 0}
+              onClick={() => setAutomationModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 font-mono text-xs font-medium text-foreground transition-all hover:border-foreground/30 hover:bg-secondary/60 disabled:opacity-50"
+              title="Configure custom threshold or bulk rules"
+            >
+              <SlidersHorizontal size={13} />
+              <span>Custom Rules...</span>
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Select All Toggle Bar */}
+      {items.length > 0 && (
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <button
+            type="button"
+            onClick={handleSelectAllVisible}
+            className="flex items-center gap-2 font-mono hover:text-foreground"
+          >
+            {selectedIds.size === items.length ? (
+              <CheckSquare size={16} className="text-foreground" />
+            ) : (
+              <Square size={16} />
+            )}
+            <span>
+              {selectedIds.size === items.length ? 'Deselect All' : 'Select All Visible'} ({items.length})
+            </span>
+          </button>
+
+          {selectedIds.size > 0 && (
+            <span className="font-mono text-foreground font-semibold">
+              {selectedIds.size} of {items.length} selected
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Items List */}
       {loading ? (
@@ -310,23 +490,40 @@ export function KnowledgeQueue({ onStatusChange }: KnowledgeQueueProps) {
             const isItemRejected = item.status === 'rejected'
             const colorClass = CATEGORY_COLORS[item.category] || CATEGORY_COLORS.other
             const isProcessingThis = actionInProgress === item._id
+            const isSelected = selectedIds.has(item._id)
 
             return (
               <div
                 key={item._id}
-                className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-4 transition-all duration-200 hover:border-foreground/20 hover:shadow-sm sm:p-5"
+                className={`group flex flex-col justify-between rounded-2xl border bg-card p-4 transition-all duration-200 sm:p-5 ${
+                  isSelected
+                    ? 'border-foreground shadow-sm bg-secondary/20'
+                    : 'border-border hover:border-foreground/20 hover:shadow-2xs'
+                }`}
               >
                 <div>
-                  {/* Card Header: Category & Confidence */}
+                  {/* Card Header: Checkbox, Category, Confidence */}
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSelect(item._id)}
+                        className="text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        {isSelected ? (
+                          <CheckSquare size={16} className="text-foreground" />
+                        ) : (
+                          <Square size={16} />
+                        )}
+                      </button>
+
                       <span
                         className={`rounded-md border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${colorClass}`}
                       >
                         {item.category}
                       </span>
                       {item.confidence !== undefined && (
-                        <span className="font-mono text-[10px] text-muted-foreground">
+                        <span className="font-mono text-[10px] text-muted-foreground font-semibold">
                           {Math.round(item.confidence * 100)}% conf
                         </span>
                       )}
@@ -350,22 +547,22 @@ export function KnowledgeQueue({ onStatusChange }: KnowledgeQueueProps) {
                     &ldquo;{item.information}&rdquo;
                   </h4>
 
-                  {/* Extraction Rationale / Context */}
+                  {/* Extraction Rationale */}
                   {item.reason && (
                     <p className="mt-2.5 rounded-xl border border-border/60 bg-secondary/30 p-2.5 font-mono text-[11px] leading-relaxed text-muted-foreground">
-                      <span className="font-semibold text-foreground/80">Gemini Reason:</span>{' '}
+                      <span className="font-semibold text-foreground/80">Reason:</span>{' '}
                       {item.reason}
                     </p>
                   )}
                 </div>
 
-                {/* Card Footer: Metadata & Actions */}
+                {/* Card Footer */}
                 <div className="mt-4 border-t border-border/60 pt-3">
                   <div className="flex items-center justify-between gap-2">
                     <button
                       type="button"
                       onClick={() => handleCopy(item.session_id, item._id)}
-                      className="flex items-center gap-1 font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground truncate max-w-[140px] sm:max-w-none"
+                      className="flex items-center gap-1 font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground truncate max-w-[130px] sm:max-w-none"
                       title="Click to copy session ID"
                     >
                       {copiedId === item._id ? (
@@ -376,7 +573,7 @@ export function KnowledgeQueue({ onStatusChange }: KnowledgeQueueProps) {
                       <span className="truncate">session: {item.session_id}</span>
                     </button>
 
-                    {/* Action Buttons */}
+                    {/* Single Action Buttons */}
                     <div className="flex items-center gap-1.5">
                       {isItemPending && (
                         <>
@@ -457,6 +654,160 @@ export function KnowledgeQueue({ onStatusChange }: KnowledgeQueueProps) {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Floating Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed inset-x-0 bottom-6 z-40 flex justify-center px-4 animate-in fade-in slide-in-from-bottom-4">
+          <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/95 px-5 py-3 shadow-2xl backdrop-blur-xl">
+            <span className="font-mono text-xs font-bold text-foreground">
+              {selectedIds.size} fact{selectedIds.size > 1 ? 's' : ''} selected
+            </span>
+
+            <div className="h-4 w-px bg-border" />
+
+            <button
+              type="button"
+              disabled={bulkLoading}
+              onClick={() => handleBulkUpdate('approved')}
+              className="flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 font-mono text-xs font-semibold text-emerald-600 transition-colors hover:bg-emerald-500 hover:text-white dark:text-emerald-400 dark:hover:text-black"
+            >
+              {bulkLoading ? <Loader2 size={13} className="animate-spin" /> : <Check size={14} />}
+              <span>Approve Selected</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={bulkLoading}
+              onClick={() => handleBulkUpdate('rejected')}
+              className="flex items-center gap-1.5 rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-1.5 font-mono text-xs font-semibold text-rose-500 transition-colors hover:bg-rose-500 hover:text-white"
+            >
+              {bulkLoading ? <Loader2 size={13} className="animate-spin" /> : <X size={14} />}
+              <span>Reject Selected</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="font-mono text-xs text-muted-foreground hover:text-foreground px-1"
+            >
+              Deselect
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Automation Modal */}
+      {automationModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6 shadow-2xl sm:p-7">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-secondary text-foreground">
+                  <Zap size={16} />
+                </div>
+                <h3 className="font-mono text-sm font-bold text-foreground">
+                  Automate Fact Moderation
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAutomationModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+              Execute automated rules across all currently pending facts in MongoDB Atlas without reviewing each one manually.
+            </p>
+
+            <div className="mt-6 space-y-4 font-mono text-xs">
+              {/* Approval Threshold Slider */}
+              <div className="space-y-2 rounded-2xl border border-border bg-secondary/30 p-4">
+                <div className="flex items-center justify-between font-semibold">
+                  <span className="text-emerald-500">Auto-Approve Threshold:</span>
+                  <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-emerald-500">
+                    ≥ {customThreshold}% Confident
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="60"
+                  max="100"
+                  step="5"
+                  value={customThreshold}
+                  onChange={(e) => setCustomThreshold(parseInt(e.target.value, 10))}
+                  className="w-full accent-emerald-500 cursor-pointer"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Facts with confidence score at or above this value will be approved into memory.
+                </p>
+              </div>
+
+              {/* Rejection Threshold */}
+              <div className="space-y-2 rounded-2xl border border-border bg-secondary/30 p-4">
+                <div className="flex items-center justify-between font-semibold">
+                  <label className="flex items-center gap-2 cursor-pointer text-rose-500">
+                    <input
+                      type="checkbox"
+                      checked={enableRejectBelow}
+                      onChange={(e) => setEnableRejectBelow(e.target.checked)}
+                      className="accent-rose-500"
+                    />
+                    <span>Auto-Reject Low Confidence:</span>
+                  </label>
+                  {enableRejectBelow && (
+                    <span className="rounded-md bg-rose-500/10 px-2 py-0.5 text-rose-500">
+                      &lt; {customRejectBelow}%
+                    </span>
+                  )}
+                </div>
+                {enableRejectBelow && (
+                  <>
+                    <input
+                      type="range"
+                      min="30"
+                      max="80"
+                      step="5"
+                      value={customRejectBelow}
+                      onChange={(e) => setCustomRejectBelow(parseInt(e.target.value, 10))}
+                      className="w-full accent-rose-500 cursor-pointer"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Facts with confidence lower than this value will be automatically rejected.
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setAutomationModalOpen(false)}
+                className="rounded-xl border border-border bg-card px-4 py-2 font-mono text-xs text-muted-foreground hover:text-foreground"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={bulkLoading}
+                onClick={() =>
+                  handleAutomatedThreshold(
+                    customThreshold,
+                    enableRejectBelow ? customRejectBelow : undefined,
+                  )
+                }
+                className="flex items-center gap-2 rounded-xl bg-foreground px-4 py-2 font-mono text-xs font-bold text-background transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {bulkLoading ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+                <span>Execute Automation</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
