@@ -2,9 +2,18 @@ import { GoogleGenAI } from '@google/genai'
 import { getSystemInstruction } from '@/lib/jehosue-knowledge'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 import { getDatabase } from '@/lib/mongodb'
+import { isTrivialMessage } from '@/lib/trivial-message-filter'
+import {
+  getVisitorMemories,
+  getVisitorProfile,
+  formatVisitorContextForPrompt,
+  recordVisitorInteraction,
+} from '@/lib/visitor-memory'
+import { extractAndStoreVisitorMemories } from '@/lib/visitor-extractor'
 import {
   validateRequestHeaders,
   validateSessionId,
+  validateVisitorId,
   validateString,
   escapeHtml,
   trimApiResponse,
@@ -14,6 +23,7 @@ import {
 
 /** Asynchronously logs chat conversation to MongoDB */
 async function saveConversation(data: {
+  visitorId: string
   sessionId: string
   visitorMessage: string
   aiResponse: string
@@ -24,6 +34,7 @@ async function saveConversation(data: {
     if (!db) return
 
     await db.collection('conversations').insertOne({
+      visitor_id: data.visitorId,
       session_id: data.sessionId,
       visitor_message: data.visitorMessage,
       ai_response: data.aiResponse,
@@ -77,6 +88,9 @@ export async function POST(request: Request) {
     // 14. Validate all inputs
     const rawSessionId = body.session_id
     const sessionId = validateSessionId(rawSessionId)
+
+    const rawVisitorId = body.visitor_id
+    const visitorId = validateVisitorId(rawVisitorId)
 
     const rawMessages = body.messages
     if (!rawMessages || !Array.isArray(rawMessages) || rawMessages.length === 0) {
@@ -139,6 +153,7 @@ export async function POST(request: Request) {
     if (/\b(cha|charizh)\b/i.test(lastMessage)) {
       const easterEggText = 'whoops,  what are you trying to breakin'
       saveConversation({
+        visitorId,
         sessionId,
         visitorMessage: lastMessage,
         aiResponse: easterEggText,
@@ -216,7 +231,19 @@ export async function POST(request: Request) {
       console.warn('[MongoDB] Dynamic knowledge fetch skipped:', dbErr)
     }
 
-    const systemInstruction = getSystemInstruction(dynamicKnowledge)
+    // Retrieve returning visitor memories & profile
+    let visitorContext = ''
+    try {
+      const [memories, profile] = await Promise.all([
+        getVisitorMemories(visitorId),
+        getVisitorProfile(visitorId),
+      ])
+      visitorContext = formatVisitorContextForPrompt(memories, profile)
+    } catch (vErr) {
+      console.warn('[VisitorMemory] Context retrieval skipped:', vErr)
+    }
+
+    const systemInstruction = getSystemInstruction(dynamicKnowledge, visitorContext)
 
     const candidateModels = [
       'gemini-3.5-flash-lite',
@@ -272,17 +299,34 @@ export async function POST(request: Request) {
           }
           controller.close()
 
-          // Log conversation to MongoDB with safety sanitization
+          // Log conversation to MongoDB with safety sanitization (skip trivial greetings/fillers)
           if (fullResponseText.trim()) {
             const cleanAiText = sanitizeAiOutput(fullResponseText.trim())
-            saveConversation({
-              sessionId,
-              visitorMessage: lastMessage,
-              aiResponse: cleanAiText,
-              model: usedModel,
-            }).catch((err) => {
-              console.warn('[MongoDB] Save conversation background error:', err)
-            })
+
+            if (!isTrivialMessage(lastMessage)) {
+              saveConversation({
+                visitorId,
+                sessionId,
+                visitorMessage: lastMessage,
+                aiResponse: cleanAiText,
+                model: usedModel,
+              }).catch((err) => {
+                console.warn('[MongoDB] Save conversation background error:', err)
+              })
+
+              // Asynchronously extract and store visitor memories without blocking
+              extractAndStoreVisitorMemories({
+                visitorId,
+                sessionId,
+                visitorMessage: lastMessage,
+                aiResponse: cleanAiText,
+              }).catch((err) => {
+                console.warn('[VisitorExtractor] Background extraction error:', err)
+              })
+            } else {
+              // Record interaction metadata (last_seen, total_messages) even on trivial messages
+              recordVisitorInteraction(visitorId, sessionId).catch(() => {})
+            }
           }
         } catch (err) {
           controller.error(err)

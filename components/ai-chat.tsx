@@ -117,17 +117,37 @@ export function AiChat() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string>('')
+  const [visitorId, setVisitorId] = useState<string>('')
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const chatPanelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    // Persistent visitor identity across browser visits
+    let vid = typeof window !== 'undefined' ? localStorage.getItem('ai_jehosue_visitor_id') : null
+    if (!vid) {
+      vid = `vis-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('ai_jehosue_visitor_id', vid)
+        } catch {
+          // Ignore localStorage quota errors
+        }
+      }
+    }
+    setVisitorId(vid)
+
+    // Ephemeral session identity (per-tab/browser lifecycle)
     let sid = typeof window !== 'undefined' ? sessionStorage.getItem('ai_jehosue_session_id') : null
     if (!sid) {
       sid = `session-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem('ai_jehosue_session_id', sid)
+        try {
+          sessionStorage.setItem('ai_jehosue_session_id', sid)
+        } catch {
+          // Ignore sessionStorage quota errors
+        }
       }
     }
     setSessionId(sid)
@@ -235,6 +255,7 @@ export function AiChat() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          visitor_id: visitorId,
           session_id: sessionId,
           messages: updatedMessages
             .filter((m) => m.id !== 'welcome')

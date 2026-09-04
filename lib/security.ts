@@ -92,6 +92,17 @@ export function validateSessionId(id: unknown): string {
 }
 
 /**
+ * Validates visitor_id format (safe alphanumeric + hyphens/underscores only)
+ */
+export function validateVisitorId(id: unknown): string {
+  if (!id || typeof id !== 'string') {
+    return 'anonymous-visitor'
+  }
+  const clean = id.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)
+  return clean || 'anonymous-visitor'
+}
+
+/**
  * 16. Restrict File Uploads & Validate Request Headers
  * Rejects unexpected content types (e.g. multipart file uploads) and oversized payloads.
  */

@@ -35,6 +35,8 @@ export async function GET(request: Request) {
       pendingFactsCount,
       approvedFactsCount,
       rejectedFactsCount,
+      totalVisitorsCount,
+      visitorMemoriesCount,
       recentLogs,
     ] = await Promise.all([
       db.collection('conversations').countDocuments({}),
@@ -50,6 +52,8 @@ export async function GET(request: Request) {
       db.collection('knowledge').countDocuments({ status: 'pending_review' }),
       db.collection('knowledge').countDocuments({ status: 'approved' }),
       db.collection('knowledge').countDocuments({ status: 'rejected' }),
+      db.collection('visitor_profiles').countDocuments({}),
+      db.collection('visitor_memories').countDocuments({ status: 'active' }),
       db
         .collection('processing_logs')
         .find({})
@@ -72,6 +76,8 @@ export async function GET(request: Request) {
           approvedFactsCount,
           rejectedFactsCount,
           totalFactsCount: pendingFactsCount + approvedFactsCount + rejectedFactsCount,
+          totalVisitorsCount,
+          visitorMemoriesCount,
         },
         recentLogs: recentLogs.map((log) => ({
           ...log,
