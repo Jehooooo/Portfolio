@@ -1,6 +1,7 @@
 import { verifyAdminAuth } from '@/lib/admin-auth'
 import { getDatabase } from '@/lib/mongodb'
-import { trimApiResponse } from '@/lib/security'
+import { trimApiResponse, validateRequestHeaders } from '@/lib/security'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 import { ObjectId, Filter } from 'mongodb'
 
 export const dynamic = 'force-dynamic'
@@ -19,6 +20,23 @@ interface KnowledgeDoc {
  * Performs automated or batch approval/rejection of knowledge items
  */
 export async function POST(request: Request) {
+  const clientIp = getClientIp(request)
+  const rateLimit = checkRateLimit(`admin-auto-mod:${clientIp}`, 30, 60 * 1000)
+  if (!rateLimit.allowed) {
+    return Response.json(
+      trimApiResponse({ error: 'Too many requests. Please slow down.' }),
+      { status: 429, headers: { 'Retry-After': String(rateLimit.resetTime) } },
+    )
+  }
+
+  const headerCheck = validateRequestHeaders(request, 64 * 1024)
+  if (!headerCheck.valid) {
+    return Response.json(
+      trimApiResponse({ error: headerCheck.error }),
+      { status: headerCheck.status || 400 },
+    )
+  }
+
   const isAuth = await verifyAdminAuth(request)
   if (!isAuth) {
     return Response.json(
@@ -197,11 +215,10 @@ export async function POST(request: Request) {
       { status: 400 },
     )
   } catch (error) {
+    console.error('[AutoModerate] Error:', error)
     return Response.json(
       trimApiResponse({
-        error: `Auto-moderation failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        error: 'Auto-moderation failed due to an unexpected server error.',
       }),
       { status: 500 },
     )

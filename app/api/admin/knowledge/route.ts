@@ -1,6 +1,7 @@
 import { verifyAdminAuth } from '@/lib/admin-auth'
 import { getDatabase } from '@/lib/mongodb'
-import { trimApiResponse, escapeRegex } from '@/lib/security'
+import { trimApiResponse, escapeRegex, validateRequestHeaders } from '@/lib/security'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 import { ObjectId, Filter } from 'mongodb'
 
 export const dynamic = 'force-dynamic'
@@ -24,6 +25,15 @@ interface KnowledgeDoc {
  * Lists knowledge items with filtering, search, and pagination
  */
 export async function GET(request: Request) {
+  const clientIp = getClientIp(request)
+  const rateLimit = checkRateLimit(`admin-knowledge-get:${clientIp}`, 60, 60 * 1000)
+  if (!rateLimit.allowed) {
+    return Response.json(
+      trimApiResponse({ error: 'Too many requests. Please slow down.' }),
+      { status: 429, headers: { 'Retry-After': String(rateLimit.resetTime) } },
+    )
+  }
+
   const isAuth = await verifyAdminAuth(request)
   if (!isAuth) {
     return Response.json(
@@ -94,11 +104,10 @@ export async function GET(request: Request) {
       }),
     )
   } catch (error) {
+    console.error('[AdminKnowledge] GET error:', error)
     return Response.json(
       trimApiResponse({
-        error: `Failed to fetch knowledge: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        error: 'Failed to fetch knowledge items.',
       }),
       { status: 500 },
     )
@@ -110,6 +119,23 @@ export async function GET(request: Request) {
  * Updates knowledge item status ('approved', 'rejected', 'pending_review')
  */
 export async function PATCH(request: Request) {
+  const clientIp = getClientIp(request)
+  const rateLimit = checkRateLimit(`admin-knowledge-mod:${clientIp}`, 60, 60 * 1000)
+  if (!rateLimit.allowed) {
+    return Response.json(
+      trimApiResponse({ error: 'Too many requests. Please slow down.' }),
+      { status: 429, headers: { 'Retry-After': String(rateLimit.resetTime) } },
+    )
+  }
+
+  const headerCheck = validateRequestHeaders(request, 32 * 1024)
+  if (!headerCheck.valid) {
+    return Response.json(
+      trimApiResponse({ error: headerCheck.error }),
+      { status: headerCheck.status || 400 },
+    )
+  }
+
   const isAuth = await verifyAdminAuth(request)
   if (!isAuth) {
     return Response.json(
@@ -180,11 +206,10 @@ export async function PATCH(request: Request) {
       }),
     )
   } catch (error) {
+    console.error('[AdminKnowledge] PATCH error:', error)
     return Response.json(
       trimApiResponse({
-        error: `Failed to update knowledge: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        error: 'Failed to update knowledge item.',
       }),
       { status: 500 },
     )
@@ -196,6 +221,15 @@ export async function PATCH(request: Request) {
  * Permanently removes a knowledge item
  */
 export async function DELETE(request: Request) {
+  const clientIp = getClientIp(request)
+  const rateLimit = checkRateLimit(`admin-knowledge-mod:${clientIp}`, 60, 60 * 1000)
+  if (!rateLimit.allowed) {
+    return Response.json(
+      trimApiResponse({ error: 'Too many requests. Please slow down.' }),
+      { status: 429, headers: { 'Retry-After': String(rateLimit.resetTime) } },
+    )
+  }
+
   const isAuth = await verifyAdminAuth(request)
   if (!isAuth) {
     return Response.json(
@@ -239,11 +273,10 @@ export async function DELETE(request: Request) {
       }),
     )
   } catch (error) {
+    console.error('[AdminKnowledge] DELETE error:', error)
     return Response.json(
       trimApiResponse({
-        error: `Failed to delete knowledge item: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        error: 'Failed to delete knowledge item.',
       }),
       { status: 500 },
     )

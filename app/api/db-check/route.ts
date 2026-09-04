@@ -1,13 +1,49 @@
 import { NextResponse } from 'next/server'
 import clientPromise from '@/lib/mongodb'
+import { verifyAdminAuth } from '@/lib/admin-auth'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import { trimApiResponse } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(request: Request) {
+  // 1. Rate Limiting: Max 10 requests per minute per IP
+  const clientIp = getClientIp(request)
+  const rateLimit = checkRateLimit(`db-check:${clientIp}`, 10, 60 * 1000)
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      trimApiResponse({
+        error: `Too many health check requests. Please retry in ${rateLimit.resetTime}s.`,
+      }),
+      { status: 429, headers: { 'Retry-After': String(rateLimit.resetTime) } },
+    )
+  }
+
+  // 2. Check Admin Authentication
+  const isAdmin = await verifyAdminAuth(request)
+
   const startedAt = Date.now()
-  const dbName = process.env.MONGODB_DB_NAME || 'jehosue_ai'
+  const dbName = process.env.MONGODB_DB_NAME || 'portfolio'
   const uri = process.env.MONGODB_URI || ''
 
+  // 3. For Public Non-Admin Requests: Return Minimal Sanitized Health Status Only
+  // (Prevents disclosure of MongoDB cluster domains, collection names, or backend URLs)
+  if (!isAdmin) {
+    try {
+      if (!uri) {
+        return NextResponse.json({ status: 'degraded' }, { status: 503 })
+      }
+      const client = await clientPromise
+      const db = client.db(dbName)
+      await db.command({ ping: 1 })
+      return NextResponse.json({ status: 'online', timestamp: new Date().toISOString() }, { status: 200 })
+    } catch {
+      return NextResponse.json({ status: 'unavailable', timestamp: new Date().toISOString() }, { status: 503 })
+    }
+  }
+
+  // 4. For Authenticated Administrators: Return Full Diagnostics
   const result: {
     status: 'connected' | 'error' | 'unconfigured'
     timestamp: string
@@ -41,7 +77,7 @@ export async function GET() {
     },
   }
 
-  // Check Python backend reachability (with short timeout)
+  // Check Python backend reachability
   try {
     const pyCheck = await fetch(`${result.services.pythonBackendUrl}/api/knowledge`, {
       method: 'GET',
@@ -55,9 +91,7 @@ export async function GET() {
   if (!result.mongodb.configured) {
     result.status = 'unconfigured'
     result.mongodb.error = 'MONGODB_URI is not declared in environment variables.'
-    result.mongodb.hint =
-      'Add MONGODB_URI to your Vercel Project Settings -> Environment Variables and redeploy.'
-    return NextResponse.json(result, { status: 503 })
+    return NextResponse.json(trimApiResponse(result), { status: 503 })
   }
 
   try {
@@ -71,7 +105,6 @@ export async function GET() {
     result.latencyMs = pingLatency
     result.mongodb.pingSuccess = true
 
-    // List collections
     try {
       const collections = await db.listCollections().toArray()
       result.mongodb.collections = collections.map((c) => c.name)
@@ -79,38 +112,14 @@ export async function GET() {
       result.mongodb.collections = []
     }
 
-    return NextResponse.json(result, { status: 200 })
+    return NextResponse.json(trimApiResponse(result), { status: 200 })
   } catch (err: unknown) {
     const error = err as Error & { code?: number | string }
-    const errorMessage = error?.message || 'Unknown database connection error'
-
     result.status = 'error'
     result.latencyMs = Date.now() - startedAt
     result.mongodb.pingSuccess = false
-    result.mongodb.error = errorMessage
+    result.mongodb.error = error?.message || 'Database connection error'
 
-    // Diagnose common MongoDB Atlas failure causes
-    if (
-      errorMessage.includes('whitelist') ||
-      errorMessage.includes('ServerSelectionTimeoutError') ||
-      errorMessage.includes('ETIMEDOUT') ||
-      errorMessage.includes('ECONNREFUSED') ||
-      error.code === 'ETIMEDOUT'
-    ) {
-      result.mongodb.hint =
-        'Connection timed out. Your MongoDB Atlas cluster is likely blocking Vercel serverless IPs. Go to MongoDB Atlas -> Security -> Network Access -> Add IP Address -> Choose "Allow Access from Anywhere" (0.0.0.0/0).'
-    } else if (
-      errorMessage.includes('bad auth') ||
-      errorMessage.includes('Authentication failed') ||
-      error.code === 18
-    ) {
-      result.mongodb.hint =
-        'Authentication failed. Verify the database username and password in your MONGODB_URI in Vercel settings.'
-    } else {
-      result.mongodb.hint =
-        'Ensure MONGODB_URI is accurate and the cluster is currently active in MongoDB Atlas.'
-    }
-
-    return NextResponse.json(result, { status: 500 })
+    return NextResponse.json(trimApiResponse(result), { status: 500 })
   }
 }

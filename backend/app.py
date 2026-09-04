@@ -1,3 +1,4 @@
+import os
 import json
 import threading
 from datetime import datetime, timezone, timedelta
@@ -470,11 +471,28 @@ def update_knowledge_status():
 @app.route('/api/db-status', methods=['GET'])
 def db_status_endpoint():
     """Diagnostic endpoint to inspect MongoDB Atlas connection health."""
+    client_ip = get_client_ip(request)
+    allowed, retry_after = check_backend_rate_limit(f"db_status:{client_ip}", limit=10, window_seconds=60)
+    if not allowed:
+        return jsonify(trim_response({
+            "error": f"Too many requests. Please try again in {retry_after} seconds."
+        })), 429
+
     status = check_db_status()
     code = 200 if status.get("connected") else 503
-    return jsonify(trim_response(status)), code
+
+    if check_admin_auth(request):
+        return jsonify(trim_response(status)), code
+
+    # Non-admin / public callers only receive minimal operational status
+    return jsonify(trim_response({
+        "status": "online" if status.get("connected") else "offline",
+        "connected": status.get("connected", False),
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })), code
 
 
 if __name__ == '__main__':
-    print(f"AI Jehosue Hardened Backend on http://127.0.0.1:{PORT}")
-    app.run(host='0.0.0.0', port=PORT, debug=True)
+    debug_mode = os.getenv('FLASK_DEBUG', 'false').lower() in ('true', '1')
+    print(f"AI Jehosue Hardened Backend on http://127.0.0.1:{PORT} (debug={debug_mode})")
+    app.run(host='0.0.0.0', port=PORT, debug=debug_mode)

@@ -4,6 +4,7 @@ import {
   trimApiResponse,
   timingSafeCompare,
   createAdminSessionToken,
+  validateRequestHeaders,
 } from '@/lib/security'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 
@@ -15,6 +16,15 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(request: Request) {
   try {
+    // Validate headers & payload limit (16 KB max)
+    const headerCheck = validateRequestHeaders(request, 16 * 1024)
+    if (!headerCheck.valid) {
+      return Response.json(
+        trimApiResponse({ error: headerCheck.error }),
+        { status: headerCheck.status || 400 },
+      )
+    }
+
     // 1. Rate Limiting: Max 5 login attempts per minute per IP
     const clientIp = getClientIp(request)
     const rateLimit = checkRateLimit(`admin-login:${clientIp}`, 5, 60 * 1000)
@@ -84,9 +94,10 @@ export async function POST(request: Request) {
       }),
     )
   } catch (error) {
+    console.error('[AdminAuth] Login error:', error)
     return Response.json(
       trimApiResponse({
-        error: `Authentication failed: ${error instanceof Error ? error.message : String(error)}`,
+        error: 'Authentication failed due to an unexpected error.',
       }),
       { status: 500 },
     )
@@ -98,6 +109,15 @@ export async function POST(request: Request) {
  * Returns whether current session is authenticated
  */
 export async function GET(request: Request) {
+  const clientIp = getClientIp(request)
+  const rateLimit = checkRateLimit(`admin-auth-check:${clientIp}`, 60, 60 * 1000)
+  if (!rateLimit.allowed) {
+    return Response.json(
+      trimApiResponse({ error: 'Too many status check requests.' }),
+      { status: 429, headers: { 'Retry-After': String(rateLimit.resetTime) } },
+    )
+  }
+
   const isAuth = await verifyAdminAuth(request)
   return Response.json(
     trimApiResponse({

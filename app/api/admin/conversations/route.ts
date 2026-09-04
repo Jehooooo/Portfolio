@@ -1,6 +1,7 @@
 import { verifyAdminAuth } from '@/lib/admin-auth'
 import { getDatabase } from '@/lib/mongodb'
 import { trimApiResponse, escapeRegex } from '@/lib/security'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 import { ObjectId, Filter } from 'mongodb'
 
 export const dynamic = 'force-dynamic'
@@ -22,6 +23,15 @@ interface ConversationDoc {
  * Returns conversations list with search, filter, and pagination
  */
 export async function GET(request: Request) {
+  const clientIp = getClientIp(request)
+  const rateLimit = checkRateLimit(`admin-conversations:${clientIp}`, 60, 60 * 1000)
+  if (!rateLimit.allowed) {
+    return Response.json(
+      trimApiResponse({ error: 'Too many requests. Please slow down.' }),
+      { status: 429, headers: { 'Retry-After': String(rateLimit.resetTime) } },
+    )
+  }
+
   const isAuth = await verifyAdminAuth(request)
   if (!isAuth) {
     return Response.json(
@@ -110,11 +120,10 @@ export async function GET(request: Request) {
       }),
     )
   } catch (error) {
+    console.error('[AdminConversations] Error:', error)
     return Response.json(
       trimApiResponse({
-        error: `Failed to fetch conversations: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        error: 'Failed to retrieve conversations.',
       }),
       { status: 500 },
     )

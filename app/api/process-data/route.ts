@@ -3,8 +3,9 @@ import {
   getProcessingStats,
 } from '@/lib/knowledge-processor'
 import { getDatabase } from '@/lib/mongodb'
-import { trimApiResponse, timingSafeCompare } from '@/lib/security'
+import { trimApiResponse, timingSafeCompare, validateRequestHeaders } from '@/lib/security'
 import { verifyAdminAuth } from '@/lib/admin-auth'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,6 +42,15 @@ async function checkAuth(req: Request): Promise<boolean> {
  * Triggers knowledge extraction on unprocessed chat conversations.
  */
 export async function POST(request: Request) {
+  const clientIp = getClientIp(request)
+  const rateLimit = checkRateLimit(`process-data-post:${clientIp}`, 15, 60 * 1000)
+  if (!rateLimit.allowed) {
+    return Response.json(
+      trimApiResponse({ error: 'Too many processing requests. Please wait.' }),
+      { status: 429, headers: { 'Retry-After': String(rateLimit.resetTime) } },
+    )
+  }
+
   try {
     const authorized = await checkAuth(request)
     if (!authorized) {
@@ -48,6 +58,17 @@ export async function POST(request: Request) {
         trimApiResponse({ error: 'Forbidden: Valid admin or cron authorization required.' }),
         { status: 403 },
       )
+    }
+
+    const contentType = request.headers.get('content-type') || ''
+    if (contentType.toLowerCase().includes('application/json')) {
+      const headerCheck = validateRequestHeaders(request, 16 * 1024)
+      if (!headerCheck.valid) {
+        return Response.json(
+          trimApiResponse({ error: headerCheck.error }),
+          { status: headerCheck.status || 400 },
+        )
+      }
     }
 
     let bodyLimit: number | undefined
@@ -78,9 +99,7 @@ export async function POST(request: Request) {
     console.error('[API process-data] Extraction error:', error)
     return Response.json(
       trimApiResponse({
-        error: `Failed to execute conversation processor: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        error: 'Failed to execute conversation processor.',
       }),
       { status: 500 },
     )
@@ -92,6 +111,15 @@ export async function POST(request: Request) {
  * Returns processing pipeline statistics, pending counts, and recent logs (requires admin/cron auth).
  */
 export async function GET(request: Request) {
+  const clientIp = getClientIp(request)
+  const rateLimit = checkRateLimit(`process-data-get:${clientIp}`, 30, 60 * 1000)
+  if (!rateLimit.allowed) {
+    return Response.json(
+      trimApiResponse({ error: 'Too many requests. Please slow down.' }),
+      { status: 429, headers: { 'Retry-After': String(rateLimit.resetTime) } },
+    )
+  }
+
   try {
     const authorized = await checkAuth(request)
     if (!authorized) {
@@ -137,9 +165,7 @@ export async function GET(request: Request) {
     console.error('[API process-data] Error fetching stats:', error)
     return Response.json(
       trimApiResponse({
-        error: `Failed to fetch processor status: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        error: 'Failed to fetch processor status.',
       }),
       { status: 500 },
     )

@@ -1,7 +1,8 @@
 import { ObjectId } from 'mongodb'
 import { verifyAdminAuth } from '@/lib/admin-auth'
 import { getDatabase } from '@/lib/mongodb'
-import { trimApiResponse } from '@/lib/security'
+import { trimApiResponse, validateRequestHeaders } from '@/lib/security'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,6 +11,15 @@ export const dynamic = 'force-dynamic'
  * Retrieves submitted contact form messages with optional filter and pagination.
  */
 export async function GET(request: Request) {
+  const clientIp = getClientIp(request)
+  const rateLimit = checkRateLimit(`admin-messages-get:${clientIp}`, 60, 60 * 1000)
+  if (!rateLimit.allowed) {
+    return Response.json(
+      trimApiResponse({ error: 'Too many requests. Please slow down.' }),
+      { status: 429, headers: { 'Retry-After': String(rateLimit.resetTime) } },
+    )
+  }
+
   const isAuth = await verifyAdminAuth(request)
   if (!isAuth) {
     return Response.json(
@@ -78,6 +88,23 @@ export async function GET(request: Request) {
  * Toggles message status between 'read' and 'unread'.
  */
 export async function PATCH(request: Request) {
+  const clientIp = getClientIp(request)
+  const rateLimit = checkRateLimit(`admin-messages-mod:${clientIp}`, 60, 60 * 1000)
+  if (!rateLimit.allowed) {
+    return Response.json(
+      trimApiResponse({ error: 'Too many requests. Please slow down.' }),
+      { status: 429, headers: { 'Retry-After': String(rateLimit.resetTime) } },
+    )
+  }
+
+  const headerCheck = validateRequestHeaders(request, 16 * 1024)
+  if (!headerCheck.valid) {
+    return Response.json(
+      trimApiResponse({ error: headerCheck.error }),
+      { status: headerCheck.status || 400 },
+    )
+  }
+
   const isAuth = await verifyAdminAuth(request)
   if (!isAuth) {
     return Response.json(
@@ -132,6 +159,15 @@ export async function PATCH(request: Request) {
  * Removes a contact message.
  */
 export async function DELETE(request: Request) {
+  const clientIp = getClientIp(request)
+  const rateLimit = checkRateLimit(`admin-messages-mod:${clientIp}`, 60, 60 * 1000)
+  if (!rateLimit.allowed) {
+    return Response.json(
+      trimApiResponse({ error: 'Too many requests. Please slow down.' }),
+      { status: 429, headers: { 'Retry-After': String(rateLimit.resetTime) } },
+    )
+  }
+
   const isAuth = await verifyAdminAuth(request)
   if (!isAuth) {
     return Response.json(

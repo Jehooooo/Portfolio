@@ -1,11 +1,11 @@
 import { processUnprocessedConversations } from '@/lib/knowledge-processor'
-import { timingSafeCompare } from '@/lib/security'
+import { timingSafeCompare, trimApiResponse } from '@/lib/security'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 
 export const dynamic = 'force-dynamic'
 
 function isAuthorized(req: Request): boolean {
   const cronSecret = process.env.CRON_SECRET || ''
-  // In development or if CRON_SECRET is not configured yet, allow execution
   if (!cronSecret && process.env.NODE_ENV === 'development') {
     return true
   }
@@ -22,7 +22,6 @@ function isAuthorized(req: Request): boolean {
     }
   }
 
-  // Also support custom x-cron-secret header
   const xCronSecret = req.headers.get('x-cron-secret') || ''
   if (xCronSecret && timingSafeCompare(xCronSecret, cronSecret)) {
     return true
@@ -32,9 +31,19 @@ function isAuthorized(req: Request): boolean {
 }
 
 async function handleCronTrigger(req: Request) {
+  // Rate limiting: Max 10 calls per minute
+  const clientIp = getClientIp(req)
+  const rateLimit = checkRateLimit(`cron:${clientIp}`, 10, 60 * 1000)
+  if (!rateLimit.allowed) {
+    return Response.json(
+      trimApiResponse({ error: `Too many cron requests. Retry in ${rateLimit.resetTime}s.` }),
+      { status: 429, headers: { 'Retry-After': String(rateLimit.resetTime) } },
+    )
+  }
+
   if (!isAuthorized(req)) {
     return Response.json(
-      { error: 'Unauthorized: Invalid or missing CRON_SECRET.' },
+      trimApiResponse({ error: 'Unauthorized: Invalid or missing CRON_SECRET.' }),
       { status: 401 },
     )
   }
@@ -45,18 +54,20 @@ async function handleCronTrigger(req: Request) {
       limit: 25,
     })
 
-    return Response.json({
-      success: true,
-      timestamp: new Date().toISOString(),
-      ...result,
-    })
+    return Response.json(
+      trimApiResponse({
+        success: true,
+        timestamp: new Date().toISOString(),
+        ...result,
+      }),
+    )
   } catch (error) {
     console.error('[Cron Process Conversations] Unexpected error:', error)
     return Response.json(
-      {
+      trimApiResponse({
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown cron processing error',
-      },
+        error: 'Cron processing encountered an unexpected error.',
+      }),
       { status: 500 },
     )
   }
