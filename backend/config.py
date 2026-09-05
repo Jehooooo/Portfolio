@@ -15,8 +15,8 @@ MONGODB_DB_NAME = os.getenv('MONGODB_DB_NAME', 'jehosue_ai')
 PORT = int(os.getenv('PORT', '5000'))
 
 # ADMIN_SECRET / ADMIN_PASSWORD must be set via environment variable - no hardcoded fallback
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', '')
-ADMIN_SECRET = os.getenv('ADMIN_SECRET', '') or ADMIN_PASSWORD
+ADMIN_PASSWORD = (os.getenv('ADMIN_PASSWORD') or '').strip().strip('"\'')
+ADMIN_SECRET = (os.getenv('ADMIN_SECRET') or '').strip().strip('"\'') or ADMIN_PASSWORD
 if not ADMIN_SECRET:
     print('[Security] WARNING: Neither ADMIN_SECRET nor ADMIN_PASSWORD is set. Admin endpoints will be disabled.', file=sys.stderr)
 

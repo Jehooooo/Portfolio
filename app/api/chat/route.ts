@@ -21,35 +21,11 @@ import {
   sanitizeAiOutput,
 } from '@/lib/security'
 
-/** Asynchronously logs chat conversation to MongoDB */
-async function saveConversation(data: {
-  visitorId: string
-  sessionId: string
-  visitorMessage: string
-  aiResponse: string
-  model: string
-}) {
-  try {
-    const db = await getDatabase()
-    if (!db) return
-
-    await db.collection('conversations').insertOne({
-      visitor_id: data.visitorId,
-      session_id: data.sessionId,
-      visitor_message: data.visitorMessage,
-      ai_response: data.aiResponse,
-      timestamp: new Date().toISOString(),
-      processed: false,
-      processing_status: 'pending',
-      metadata: {
-        model: data.model,
-        source: 'nextjs-serverless',
-      },
-    })
-  } catch (err) {
-    console.warn('[MongoDB] Background conversation logging failed:', err)
-  }
-}
+import {
+  saveRawConversationMessage,
+  getRelevantPreviousConversations,
+  formatRelevantConversationsForPrompt,
+} from '@/lib/raw-conversation-memory'
 
 export async function POST(request: Request) {
   try {
@@ -147,16 +123,22 @@ export async function POST(request: Request) {
       )
     }
 
+    const lastRawItem = rawMessages[rawMessages.length - 1]
+    const rawVisitorMessage =
+      typeof lastRawItem?.content === 'string'
+        ? lastRawItem.content
+        : String(lastRawItem?.content || '')
+
     const lastMessage = validatedMessages[validatedMessages.length - 1].content
 
     // Easter Egg: If visitor mentions "Cha" or "charizh" (case-insensitive)
     if (/\b(cha|charizh)\b/i.test(lastMessage)) {
       const easterEggText = 'whoops,  what are you trying to breakin'
-      saveConversation({
+      saveRawConversationMessage({
         visitorId,
-        sessionId,
-        visitorMessage: lastMessage,
-        aiResponse: easterEggText,
+        conversationId: sessionId,
+        rawVisitorMessage,
+        rawAiResponse: easterEggText,
         model: 'easter-egg-rule',
       }).catch((err) => {
         console.warn('[MongoDB] Background easter egg log failed:', err)
@@ -231,7 +213,7 @@ export async function POST(request: Request) {
       console.warn('[MongoDB] Dynamic knowledge fetch skipped:', dbErr)
     }
 
-    // Retrieve returning visitor memories & profile
+    // Retrieve returning visitor memories & profile (extracted facts)
     let visitorContext = ''
     try {
       const [memories, profile] = await Promise.all([
@@ -243,7 +225,25 @@ export async function POST(request: Request) {
       console.warn('[VisitorMemory] Context retrieval skipped:', vErr)
     }
 
-    const systemInstruction = getSystemInstruction(dynamicKnowledge, visitorContext)
+    // Retrieve relevant previous conversations (raw historical memory)
+    let relevantConversationsContext = ''
+    try {
+      const relevantPastConvs = await getRelevantPreviousConversations({
+        visitorId,
+        currentSessionId: sessionId,
+        currentMessage: rawVisitorMessage,
+        limit: 2,
+      })
+      relevantConversationsContext = formatRelevantConversationsForPrompt(relevantPastConvs)
+    } catch (convErr) {
+      console.warn('[RawConversationMemory] Retrieval skipped:', convErr)
+    }
+
+    const systemInstruction = getSystemInstruction(
+      dynamicKnowledge,
+      visitorContext,
+      relevantConversationsContext,
+    )
 
     const candidateModels = [
       'gemini-3.5-flash-lite',
@@ -299,33 +299,35 @@ export async function POST(request: Request) {
           }
           controller.close()
 
-          // Log conversation to MongoDB with safety sanitization (skip trivial greetings/fillers)
+          // Preserve raw conversation in MongoDB and trigger background memory extraction
           if (fullResponseText.trim()) {
+            const rawAiText = fullResponseText
             const cleanAiText = sanitizeAiOutput(fullResponseText.trim())
 
-            if (!isTrivialMessage(lastMessage)) {
-              saveConversation({
-                visitorId,
-                sessionId,
-                visitorMessage: lastMessage,
-                aiResponse: cleanAiText,
-                model: usedModel,
-              }).catch((err) => {
-                console.warn('[MongoDB] Save conversation background error:', err)
-              })
+            // 1. Preserve complete raw conversation (visitor's raw message and AI raw response)
+            saveRawConversationMessage({
+              visitorId,
+              conversationId: sessionId,
+              rawVisitorMessage,
+              rawAiResponse: rawAiText,
+              model: usedModel,
+            }).catch((err) => {
+              console.warn('[RawConversationMemory] Save conversation background error:', err)
+            })
 
-              // Asynchronously extract and store visitor memories without blocking
+            // 2. Record visitor interaction metadata
+            recordVisitorInteraction(visitorId, sessionId).catch(() => {})
+
+            // 3. Asynchronously extract visitor memories if non-trivial
+            if (!isTrivialMessage(rawVisitorMessage)) {
               extractAndStoreVisitorMemories({
                 visitorId,
                 sessionId,
-                visitorMessage: lastMessage,
+                visitorMessage: rawVisitorMessage,
                 aiResponse: cleanAiText,
               }).catch((err) => {
                 console.warn('[VisitorExtractor] Background extraction error:', err)
               })
-            } else {
-              // Record interaction metadata (last_seen, total_messages) even on trivial messages
-              recordVisitorInteraction(visitorId, sessionId).catch(() => {})
             }
           }
         } catch (err) {

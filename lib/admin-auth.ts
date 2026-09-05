@@ -9,8 +9,8 @@ import { timingSafeCompare, verifyAdminSessionToken } from '@/lib/security'
  * 3. Cookie `admin_session` (HMAC signed session token)
  */
 export async function verifyAdminAuth(request: Request): Promise<boolean> {
-  const adminSecret = process.env.ADMIN_SECRET || ''
-  const adminPassword = process.env.ADMIN_PASSWORD || ''
+  const adminSecret = (process.env.ADMIN_SECRET || '').replace(/^["']|["']$/g, '').trim()
+  const adminPassword = (process.env.ADMIN_PASSWORD || '').replace(/^["']|["']$/g, '').trim()
   const authSecret = adminSecret || adminPassword
 
   // If neither is set in development, permit access
@@ -37,6 +37,8 @@ export async function verifyAdminAuth(request: Request): Promise<boolean> {
     if (adminSecret && timingSafeCompare(token, adminSecret)) return true
     if (adminPassword && timingSafeCompare(token, adminPassword)) return true
     if (verifyAdminSessionToken(token, authSecret)) return true
+    if (adminSecret && verifyAdminSessionToken(token, adminSecret)) return true
+    if (adminPassword && verifyAdminSessionToken(token, adminPassword)) return true
   }
 
   // 3. Check cookies (both from next/headers and Request header)
@@ -54,10 +56,10 @@ export async function verifyAdminAuth(request: Request): Promise<boolean> {
 
   if (sessionCookie) {
     // Check cryptographically signed HMAC session token
-    if (verifyAdminSessionToken(sessionCookie, authSecret)) {
-      return true
-    }
-    // Also accept raw secret if matched via constant-time comparison
+    if (verifyAdminSessionToken(sessionCookie, authSecret)) return true
+    if (adminSecret && verifyAdminSessionToken(sessionCookie, adminSecret)) return true
+    if (adminPassword && verifyAdminSessionToken(sessionCookie, adminPassword)) return true
+    // Also accept raw password/secret if matched via constant-time comparison
     if (adminSecret && timingSafeCompare(sessionCookie, adminSecret)) return true
     if (adminPassword && timingSafeCompare(sessionCookie, adminPassword)) return true
   }

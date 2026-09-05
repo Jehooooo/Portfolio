@@ -49,8 +49,8 @@ export async function POST(request: Request) {
     }
 
     const submitted = String(body.password || body.secret || '').trim()
-    const configuredPassword = process.env.ADMIN_PASSWORD || ''
-    const configuredSecret = process.env.ADMIN_SECRET || ''
+    const configuredPassword = (process.env.ADMIN_PASSWORD || '').replace(/^["']|["']$/g, '').trim()
+    const configuredSecret = (process.env.ADMIN_SECRET || '').replace(/^["']|["']$/g, '').trim()
 
     if (!configuredPassword && !configuredSecret) {
       return Response.json(

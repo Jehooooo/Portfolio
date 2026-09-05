@@ -22,7 +22,10 @@ import {
 
 export interface ConversationItem {
   _id: string
+  conversation_id?: string
   session_id: string
+  visitor_id?: string
+  title?: string
   visitor_message: string
   ai_response: string
   timestamp: string
@@ -340,10 +343,15 @@ export function ConversationViewer() {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono text-xs font-semibold text-foreground truncate max-w-[120px] sm:max-w-[160px]">
                           {conv.session_id}
                         </span>
+                        {conv.title && (
+                          <span className="inline-flex items-center rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-primary">
+                            {conv.title}
+                          </span>
+                        )}
                         <span className="font-mono text-[11px] text-muted-foreground">
                           {formatTime(conv.timestamp)}
                         </span>

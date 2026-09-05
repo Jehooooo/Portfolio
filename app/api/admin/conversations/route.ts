@@ -8,7 +8,16 @@ export const dynamic = 'force-dynamic'
 
 interface ConversationDoc {
   _id: ObjectId
+  conversation_id?: string
   session_id: string
+  visitor_id?: string
+  title?: string
+  messages?: Array<{
+    message_id: string
+    role: string
+    raw_content: string
+    created_at: string
+  }>
   visitor_message: string
   ai_response: string
   timestamp: string
@@ -89,6 +98,7 @@ export async function GET(request: Request) {
               { visitor_message: searchRegex },
               { ai_response: searchRegex },
               { session_id: searchRegex },
+              { title: searchRegex },
             ],
           },
         ]
@@ -98,6 +108,7 @@ export async function GET(request: Request) {
           { visitor_message: searchRegex },
           { ai_response: searchRegex },
           { session_id: searchRegex },
+          { title: searchRegex },
         ]
       }
     }

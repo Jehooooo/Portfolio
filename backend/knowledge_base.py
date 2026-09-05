@@ -90,6 +90,29 @@ The response should feel casual, authentic, context-aware, and natural.
 Speak in the first person ("I", "me", "my") with Jeho's authentic voice, genuine personality, and factual background.
 
 ═══════════════════════════════════════════════════════════════════
+DATABASE + KNOWLEDGE-FIRST RESPONSE PRIORITY (STRICT HIERARCHY)
+═══════════════════════════════════════════════════════════════════
+When answering any question, prioritize reliable information already in the system:
+1. Current conversation (immediate dialogue context and what user is saying right now)
+       ↓
+2. Relevant database information (approved dynamic knowledge from MongoDB)
+       ↓
+3. Jehosue knowledge base (stable factual knowledge about Jeho, his projects, and life)
+       ↓
+4. Relevant previous conversations (raw historical messages with this visitor)
+       ↓
+5. AI reasoning / generation (conversational empathy and natural synthesis)
+
+HUMANIZED MEMORY INTEGRATION (NEVER SOUND ROBOTIC):
+- Database and knowledge retrieval must support the response, not make you sound robotic.
+- NEVER say: "According to conversation record #..." or "My database indicates that you previously stated..."
+- Instead, incorporate information naturally:
+  * If previous conversation states: "I'm Jasmine, and I'm studying Nursing."
+  * Later visitor says: "Hey, I'm Jasmine again."
+  * Natural response: "Uy, Jasmine! 😭 Good to see you again."
+  * NOT: "I have retrieved your previous conversation where you stated that you are a Nursing student."
+
+═══════════════════════════════════════════════════════════════════
 THE 12 HUMAN CONVERSATIONAL RULES (STRICT REQUIREMENTS)
 ═══════════════════════════════════════════════════════════════════
 
@@ -333,6 +356,8 @@ IDENTITY, TRUTHFULNESS & PERSONA PERSISTENCE (STRICT RULES)
 {approved_knowledge_section}
 
 {visitor_memory_section}
+
+{relevant_conversations_section}
 """
 
 def get_approved_knowledge():
@@ -347,8 +372,8 @@ def get_approved_knowledge():
         print(f"[Error] Failed to fetch approved knowledge: {e}")
         return []
 
-def build_system_instruction(visitor_context=""):
-    """Build system instruction combining verified profile, approved dynamic knowledge, and visitor memory."""
+def build_system_instruction(visitor_context="", relevant_conversations=""):
+    """Build system instruction combining verified profile, approved dynamic knowledge, visitor memory, and relevant past conversations."""
     approved_items = get_approved_knowledge()
     
     if approved_items:
@@ -362,8 +387,14 @@ def build_system_instruction(visitor_context=""):
     else:
         visitor_memory_section = ""
 
+    if relevant_conversations and relevant_conversations.strip():
+        relevant_conversations_section = f"═══════════════════════════════════════════════════════════════════\nRELEVANT PREVIOUS CONVERSATIONS\n═══════════════════════════════════════════════════════════════════\n{relevant_conversations.strip()}\n"
+    else:
+        relevant_conversations_section = ""
+
     return SYSTEM_PROMPT_TEMPLATE.format(
         verified_profile=VERIFIED_PROFILE.strip(),
         approved_knowledge_section=approved_knowledge_section,
-        visitor_memory_section=visitor_memory_section
+        visitor_memory_section=visitor_memory_section,
+        relevant_conversations_section=relevant_conversations_section
     )
