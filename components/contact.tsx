@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Download, Mail, Phone, Send, CheckCircle2, AlertCircle, Loader2, ShieldCheck } from 'lucide-react'
 import { Reveal } from '@/components/reveal'
 import { profile } from '@/lib/portfolio-data'
+import { BuyMeACoffeeButton } from '@/components/buy-me-a-coffee-button'
 
 const INITIAL_CHALLENGE = { question: '3 + 4', answer: 7 }
 
@@ -187,6 +188,7 @@ export function Contact() {
                 <span>{profile.phone}</span>
               </a>
             )}
+            <BuyMeACoffeeButton variant="pill" />
           </div>
 
           {/* Contact Form */}

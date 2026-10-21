@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { ArrowUpRight, FileText, Mail } from 'lucide-react'
+import { ArrowUpRight, FileText, Mail, Coffee } from 'lucide-react'
 import { GithubIcon, LinkedinIcon, InstagramIcon } from '@/components/brand-icons'
 import { Reveal } from '@/components/reveal'
 import { Typewriter } from '@/components/typewriter'
@@ -9,6 +9,7 @@ import { profile } from '@/lib/portfolio-data'
 import { smoothScrollTo } from '@/lib/smooth-scroll'
 import { GitHubHeatmap } from '@/components/github-heatmap'
 import { BatSwarm } from '@/components/bat-swarm'
+import { BuyMeACoffeeButton } from '@/components/buy-me-a-coffee-button'
 
 export function Hero() {
   const nameTitles = ["Jeho"]
@@ -75,7 +76,7 @@ export function Hero() {
           </Reveal>
 
           <Reveal delay={450} className="w-full">
-            <div className="mt-6 flex flex-row flex-nowrap items-center justify-center lg:justify-start gap-1.5 sm:gap-2.5 md:gap-3 w-full">
+            <div className="mt-6 flex flex-wrap items-center justify-center lg:justify-start gap-1.5 sm:gap-2.5 md:gap-3 w-full">
               <a
                 href={profile.resumeUrl || '/documents/Jeho-Update-Resume.pdf'}
                 target="_blank"
@@ -112,13 +113,15 @@ export function Hero() {
                 />
                 <span>Contact Me</span>
               </a>
+
+              <BuyMeACoffeeButton variant="hero" />
             </div>
           </Reveal>
 
           {/* Social Links */}
           {socials.length > 0 && (
             <Reveal delay={550}>
-              <div className="mt-6 flex items-center justify-center gap-3 lg:justify-start">
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
                 <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground mr-1">
                   Socials:
                 </span>
@@ -138,6 +141,24 @@ export function Hero() {
                     />
                   </a>
                 ))}
+
+                {/* Buy Me a Coffee Quick Icon */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(new CustomEvent('open-coffee-modal'))
+                    }
+                  }}
+                  aria-label="Buy Me a Coffee (GCash)"
+                  title="Buy Me a Coffee (GCash Support)"
+                  className="group flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl border border-purple-500/30 bg-purple-500/5 text-purple-600 dark:text-purple-400 backdrop-blur-md transition-all duration-300 hover:scale-110 hover:-translate-y-1 hover:border-purple-500/60 hover:bg-purple-500/20 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] cursor-pointer"
+                >
+                  <Coffee
+                    size={19}
+                    className="transition-transform duration-300 group-hover:scale-110"
+                  />
+                </button>
               </div>
             </Reveal>
           )}

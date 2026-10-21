@@ -18,6 +18,50 @@ export const profile = {
   instagramUrl: 'https://www.instagram.com/capt.jehoooo/',
 }
 
+export interface SuggestedAmount {
+  amount: number | null
+  label: string
+  description: string
+}
+
+export interface SupportConfig {
+  enabled: boolean
+  buttonText: string
+  heading: string
+  message: string
+  recipientName: string
+  gcashNumber: string
+  qrCodeUrl: string
+  suggestedAmounts: SuggestedAmount[]
+  instructions: string[]
+  disclaimer: string
+}
+
+export const supportConfig: SupportConfig = {
+  enabled: true,
+  buttonText: 'Buy Me a Coffee',
+  heading: 'Buy Me a Coffee',
+  message:
+    'Enjoying my work? You can support me with a coffee through GCash. Every little bit is appreciated!',
+  recipientName: 'JE****E B.',
+  gcashNumber: '09923314755',
+  qrCodeUrl: '/images/gcash-qr.png',
+  suggestedAmounts: [
+    { amount: 20, label: '₱20', description: 'A little coffee' },
+    { amount: 50, label: '₱50', description: 'A regular coffee' },
+    { amount: 100, label: '₱100', description: 'A coffee and snack' },
+    { amount: null, label: 'Any amount', description: 'Support whatever you wish' },
+  ],
+  instructions: [
+    'Open the GCash app on your mobile device.',
+    'Scan the QR code or save the image and upload it via GCash Scan QR.',
+    'Enter your preferred amount, if applicable.',
+    'Review the recipient details (JE****E B.) before confirming the transaction.',
+    'Send your support if you wish.',
+  ],
+  disclaimer: 'Please verify the recipient details in GCash before sending.',
+}
+
 export type ProjectCategory =
   | 'Web Development'
   | 'Python'

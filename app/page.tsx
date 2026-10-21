@@ -7,6 +7,7 @@ import { Credentials } from '@/components/credentials'
 import { Contact } from '@/components/contact'
 import { SiteFooter } from '@/components/site-footer'
 import { AiChat } from '@/components/ai-chat'
+import { BuyMeACoffeeModal } from '@/components/buy-me-a-coffee-modal'
 
 export default function Page() {
   return (
@@ -23,6 +24,7 @@ export default function Page() {
       </main>
       <SiteFooter />
       <AiChat />
+      <BuyMeACoffeeModal />
     </div>
   )
 }
