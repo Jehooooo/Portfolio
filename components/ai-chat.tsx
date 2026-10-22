@@ -186,6 +186,36 @@ export function AiChat() {
     } catch (err) {
       console.warn('Could not restore chat history', err)
     }
+
+    // Maintain conversation continuity: Load stored conversation history from database
+    if (sid) {
+      fetch(`/api/conversations?session_id=${encodeURIComponent(sid)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.found && Array.isArray(data.messages) && data.messages.length > 0) {
+            const dbMessages: Message[] = data.messages
+              .filter((m: any) => m && typeof m.content === 'string' && m.content.trim().length > 0)
+              .map((m: any) => ({
+                id: m.id || `msg-${Date.now()}`,
+                role: m.role === 'user' ? 'user' : 'assistant',
+                content: m.content,
+              }))
+
+            if (dbMessages.length > 0) {
+              setMessages((prev) => {
+                // Only replace if current is just welcome message or fewer messages
+                if (prev.length <= 1 && prev[0]?.id === 'welcome') {
+                  return [WELCOME_MESSAGE, ...dbMessages]
+                }
+                return prev
+              })
+            }
+          }
+        })
+        .catch((err) => {
+          console.warn('[AiChat] Could not sync conversation history from database:', err)
+        })
+    }
   }, [])
 
   // Persist messages to localStorage when idle (bounded to last 50 items)
@@ -260,6 +290,7 @@ export function AiChat() {
           messages: updatedMessages
             .filter((m) => m.id !== 'welcome')
             .map((m) => ({
+              id: m.id,
               role: m.role,
               content: m.content,
             })),

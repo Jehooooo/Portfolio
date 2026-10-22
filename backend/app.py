@@ -249,22 +249,89 @@ def chat():
         if not visitor_message:
             return jsonify(trim_response({"error": "Visitor message cannot be empty."})), 400
 
+        # EARLY PERSISTENCE: Save user message immediately to MongoDB upon receipt
+        import uuid
+        now_iso = datetime.now(timezone.utc).isoformat()
+        user_msg_id = last_msg.get("id") if isinstance(last_msg, dict) and last_msg.get("id") else f"msg_py_{uuid.uuid4().hex[:12]}"
+        user_msg_obj = {
+            "message_id": str(user_msg_id),
+            "conversation_id": session_id,
+            "role": "user",
+            "raw_content": visitor_message,
+            "created_at": now_iso
+        }
+
+        conv_coll = get_conversations_collection()
+        if conv_coll is not None:
+            try:
+                existing = conv_coll.find_one({
+                    "$or": [{"session_id": session_id}, {"conversation_id": session_id}]
+                })
+                if not existing:
+                    visitor_id = sanitize_str(data.get("visitor_id"), max_length=128, default="unknown-visitor")
+                    conv_coll.insert_one({
+                        "conversation_id": session_id,
+                        "session_id": session_id,
+                        "visitor_id": visitor_id,
+                        "title": "New Conversation",
+                        "created_at": now_iso,
+                        "updated_at": now_iso,
+                        "messages": [user_msg_obj],
+                        "visitor_message": visitor_message,
+                        "ai_response": "",
+                        "timestamp": now_iso,
+                        "processed": False,
+                        "processing_status": "pending",
+                        "metadata": {"source": "flask-backend"}
+                    })
+                else:
+                    # Deduplication check: check if message ID already recorded
+                    msg_exists = False
+                    if "messages" in existing and isinstance(existing["messages"], list):
+                        msg_exists = any(m.get("message_id") == str(user_msg_id) for m in existing["messages"])
+                    if not msg_exists:
+                        conv_coll.update_one(
+                            {"_id": existing["_id"]},
+                            {
+                                "$push": {"messages": user_msg_obj},
+                                "$set": {
+                                    "visitor_message": visitor_message,
+                                    "updated_at": now_iso,
+                                    "timestamp": now_iso,
+                                    "processed": False,
+                                    "processing_status": "pending"
+                                }
+                            }
+                        )
+            except Exception as e:
+                print(f"[Error] Failed early persistence of user message in Flask: {e}")
+
         # Easter Egg Check: if visitor mentions "Cha" or "charizh"
         import re
         if re.search(r'\b(cha|charizh)\b', visitor_message, re.IGNORECASE):
             easter_egg = "whoops,  what are you trying to breakin"
-            conv_coll = get_conversations_collection()
             if conv_coll is not None:
                 try:
-                    conv_coll.insert_one({
-                        "session_id": session_id,
-                        "visitor_message": visitor_message,
-                        "ai_response": easter_egg,
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "processed": False,
-                        "processing_status": "pending",
-                        "metadata": {"model": "easter-egg-rule", "source": "flask-backend"},
-                    })
+                    egg_msg_id = f"msg_py_{uuid.uuid4().hex[:12]}"
+                    egg_msg_obj = {
+                        "message_id": egg_msg_id,
+                        "conversation_id": session_id,
+                        "role": "assistant",
+                        "raw_content": easter_egg,
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    conv_coll.update_one(
+                        {"$or": [{"session_id": session_id}, {"conversation_id": session_id}]},
+                        {
+                            "$push": {"messages": egg_msg_obj},
+                            "$set": {
+                                "ai_response": easter_egg,
+                                "updated_at": datetime.now(timezone.utc).isoformat(),
+                                "timestamp": datetime.now(timezone.utc).isoformat(),
+                                "metadata.model": "easter-egg-rule"
+                            }
+                        }
+                    )
                 except Exception:
                     pass
             return jsonify(trim_response({"response": easter_egg})), 200
@@ -309,29 +376,63 @@ def chat():
                 last_error = e
 
         if not response_text:
+            # Retain user's message and record failure status
+            if conv_coll is not None:
+                try:
+                    fail_msg_id = f"msg_py_{uuid.uuid4().hex[:12]}"
+                    fail_msg_obj = {
+                        "message_id": fail_msg_id,
+                        "conversation_id": session_id,
+                        "role": "assistant",
+                        "raw_content": "[AI service temporarily unavailable]",
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    conv_coll.update_one(
+                        {"$or": [{"session_id": session_id}, {"conversation_id": session_id}]},
+                        {
+                            "$push": {"messages": fail_msg_obj},
+                            "$set": {
+                                "ai_response": "[AI service temporarily unavailable]",
+                                "processing_status": "failed",
+                                "processing_error": str(last_error) if last_error else "AI service unavailable",
+                                "updated_at": datetime.now(timezone.utc).isoformat()
+                            }
+                        }
+                    )
+                except Exception:
+                    pass
             return jsonify(trim_response({"error": "AI service temporarily unavailable. Please try again."})), 503
 
-        # Parameterized Insert with sanitized fields
+        # Record successful AI response
         clean_response = sanitize_ai_output(str(response_text).strip())
-        conv_coll = get_conversations_collection()
         if conv_coll is not None:
-            conv_doc = {
-                "session_id": session_id,
-                "visitor_message": visitor_message,
-                "ai_response": clean_response[:8192],
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "processed": False,
-                "processing_status": "pending",
-                "metadata": {
-                    "model": sanitize_str(used_model, max_length=64, default="unknown"),
-                }
+            ai_msg_id = f"msg_py_{uuid.uuid4().hex[:12]}"
+            ai_msg_obj = {
+                "message_id": ai_msg_id,
+                "conversation_id": session_id,
+                "role": "assistant",
+                "raw_content": clean_response[:8192],
+                "created_at": datetime.now(timezone.utc).isoformat()
             }
             try:
-                conv_coll.insert_one(conv_doc)
+                conv_coll.update_one(
+                    {"$or": [{"session_id": session_id}, {"conversation_id": session_id}]},
+                    {
+                        "$push": {"messages": ai_msg_obj},
+                        "$set": {
+                            "ai_response": clean_response[:8192],
+                            "updated_at": datetime.now(timezone.utc).isoformat(),
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "processed": False,
+                            "processing_status": "pending",
+                            "metadata.model": sanitize_str(used_model, max_length=64, default="unknown"),
+                        }
+                    }
+                )
                 t = threading.Thread(target=_run_processing_background, daemon=True)
                 t.start()
             except Exception as e:
-                print(f"[Error] Failed to insert conversation: {e}")
+                print(f"[Error] Failed to update conversation with AI response: {e}")
 
         # 17. Trim API response
         return jsonify(trim_response({

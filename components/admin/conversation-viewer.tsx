@@ -32,6 +32,12 @@ export interface ConversationItem {
   processed: boolean
   processing_status?: string
   processing_error?: string
+  messages?: Array<{
+    message_id?: string
+    role: 'user' | 'assistant'
+    raw_content: string
+    created_at?: string
+  }>
   metadata?: {
     model?: string
     source?: string
@@ -394,38 +400,87 @@ export function ConversationViewer() {
                 {/* Expanded Chat Messages */}
                 {isExpanded && (
                   <div className="border-t border-border/70 bg-secondary/15 p-4 space-y-3.5 sm:p-5">
-                    {/* Visitor Message Bubble */}
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
-                        <User size={14} />
-                      </div>
-                      <div className="flex-1 rounded-2xl border border-border bg-card p-3 text-xs leading-relaxed text-foreground shadow-2xs">
-                        <div className="mb-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                          Visitor
-                        </div>
-                        <p className="whitespace-pre-wrap">{conv.visitor_message}</p>
-                      </div>
-                    </div>
-
-                    {/* AI Jehosue Bubble */}
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-foreground/30 bg-foreground text-background">
-                        <Bot size={14} />
-                      </div>
-                      <div className="flex-1 rounded-2xl border border-border bg-card p-3 text-xs leading-relaxed text-foreground shadow-2xs">
-                        <div className="mb-1 flex items-center justify-between font-mono text-[10px]">
-                          <span className="font-bold uppercase tracking-wider text-foreground/80">
-                            AI Jehosue
-                          </span>
-                          {conv.metadata?.model && (
-                            <span className="text-muted-foreground">
-                              {conv.metadata.model}
-                            </span>
+                    {Array.isArray(conv.messages) && conv.messages.length > 0 ? (
+                      conv.messages.map((msg, mIdx) => (
+                        <div key={msg.message_id || `msg-${mIdx}`} className="flex items-start gap-3">
+                          {msg.role === 'user' ? (
+                            <>
+                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
+                                <User size={14} />
+                              </div>
+                              <div className="flex-1 rounded-2xl border border-border bg-card p-3 text-xs leading-relaxed text-foreground shadow-2xs">
+                                <div className="mb-1 flex items-center justify-between font-mono text-[10px]">
+                                  <span className="font-bold uppercase tracking-wider text-muted-foreground">
+                                    Visitor
+                                  </span>
+                                  {msg.created_at && (
+                                    <span className="text-muted-foreground/80">{formatTime(msg.created_at)}</span>
+                                  )}
+                                </div>
+                                <p className="whitespace-pre-wrap">{msg.raw_content}</p>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-foreground/30 bg-foreground text-background">
+                                <Bot size={14} />
+                              </div>
+                              <div className="flex-1 rounded-2xl border border-border bg-card p-3 text-xs leading-relaxed text-foreground shadow-2xs">
+                                <div className="mb-1 flex items-center justify-between font-mono text-[10px]">
+                                  <span className="font-bold uppercase tracking-wider text-foreground/80">
+                                    AI Jehosue
+                                  </span>
+                                  <div className="flex items-center gap-2 text-muted-foreground">
+                                    {conv.metadata?.model && (
+                                      <span>{conv.metadata.model}</span>
+                                    )}
+                                    {msg.created_at && (
+                                      <span>{formatTime(msg.created_at)}</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="whitespace-pre-wrap text-foreground/90">{msg.raw_content}</p>
+                              </div>
+                            </>
                           )}
                         </div>
-                        <p className="whitespace-pre-wrap text-foreground/90">{conv.ai_response}</p>
-                      </div>
-                    </div>
+                      ))
+                    ) : (
+                      <>
+                        {/* Legacy Visitor Message Bubble */}
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
+                            <User size={14} />
+                          </div>
+                          <div className="flex-1 rounded-2xl border border-border bg-card p-3 text-xs leading-relaxed text-foreground shadow-2xs">
+                            <div className="mb-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                              Visitor
+                            </div>
+                            <p className="whitespace-pre-wrap">{conv.visitor_message}</p>
+                          </div>
+                        </div>
+
+                        {/* Legacy AI Jehosue Bubble */}
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-foreground/30 bg-foreground text-background">
+                            <Bot size={14} />
+                          </div>
+                          <div className="flex-1 rounded-2xl border border-border bg-card p-3 text-xs leading-relaxed text-foreground shadow-2xs">
+                            <div className="mb-1 flex items-center justify-between font-mono text-[10px]">
+                              <span className="font-bold uppercase tracking-wider text-foreground/80">
+                                AI Jehosue
+                              </span>
+                              {conv.metadata?.model && (
+                                <span className="text-muted-foreground">
+                                  {conv.metadata.model}
+                                </span>
+                              )}
+                            </div>
+                            <p className="whitespace-pre-wrap text-foreground/90">{conv.ai_response}</p>
+                          </div>
+                        </div>
+                      </>
+                    )}
 
                     {/* Error message if failed */}
                     {conv.processing_error && (
