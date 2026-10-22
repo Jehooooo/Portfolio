@@ -272,11 +272,350 @@ STRICT GUIDELINES FOR USING PREVIOUS CONVERSATIONS:
 }
 
 /**
- * Preserves the complete conversation exchange in its original, raw form in MongoDB.
- *
- * Enforces rule:
- * "Do NOT clean or transform the message content.
- * Do not: summarize, rewrite, remove slang, remove emojis, correct grammar, remove repetitions, or shorten."
+ * Helper to execute MongoDB operations with automatic retry on transient connection failures
+ */
+async function withMongoRetry<T>(fn: () => Promise<T>, retries = 2, delayMs = 300): Promise<T> {
+  let lastError: unknown
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastError = err
+      if (attempt < retries) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs * Math.pow(2, attempt)))
+      }
+    }
+  }
+  throw lastError
+}
+
+export interface RecordUserMessageParams {
+  visitorId: string
+  conversationId: string
+  rawVisitorMessage: string
+  messageId?: string
+  clientTimestamp?: string
+}
+
+export interface RecordUserMessageResult {
+  success: boolean
+  conversationId: string
+  userMessageId: string
+  isDuplicate?: boolean
+  error?: string
+}
+
+/**
+ * Persists a user message immediately upon backend receipt.
+ * Creates the conversation record if it doesn't exist yet, or appends to messages.
+ * Prevents duplicate saves from retries or rapid duplicate submissions.
+ */
+export async function recordUserMessage(
+  params: RecordUserMessageParams,
+): Promise<RecordUserMessageResult> {
+  const { visitorId, conversationId, rawVisitorMessage, messageId, clientTimestamp } = params
+
+  const msgId = messageId && messageId.trim() ? messageId.trim() : generateMessageId()
+  const nowIso = clientTimestamp || new Date().toISOString()
+
+  try {
+    return await withMongoRetry(async () => {
+      const db = await getDatabase()
+      if (!db) {
+        console.error('[RawConversationMemory] Database connection unavailable during recordUserMessage')
+        return {
+          success: false,
+          conversationId,
+          userMessageId: msgId,
+          error: 'Database unavailable',
+        }
+      }
+
+      const convColl = db.collection('conversations')
+
+      const userMessage: RawMessage = {
+        message_id: msgId,
+        conversation_id: conversationId,
+        role: 'user',
+        raw_content: rawVisitorMessage, // 100% UNTOUCHED
+        created_at: nowIso,
+      }
+
+      // Check for existing conversation record
+      const existing = await convColl.findOne({
+        $or: [{ conversation_id: conversationId }, { session_id: conversationId }],
+      })
+
+      if (!existing) {
+        // Derive clean initial title from user message
+        const title = await generateConversationTitle(rawVisitorMessage)
+
+        await convColl.insertOne({
+          conversation_id: conversationId,
+          session_id: conversationId,
+          visitor_id: visitorId,
+          title: title || 'New Conversation',
+          created_at: nowIso,
+          updated_at: nowIso,
+          messages: [userMessage],
+          // Compatibility fields:
+          visitor_message: rawVisitorMessage,
+          ai_response: '',
+          timestamp: nowIso,
+          processed: false,
+          processing_status: 'pending',
+          metadata: {
+            source: 'nextjs-serverless',
+          },
+        })
+
+        return {
+          success: true,
+          conversationId,
+          userMessageId: msgId,
+        }
+      }
+
+      // Duplicate check: Verify message ID or immediate duplicate submission within 5 seconds
+      if (Array.isArray(existing.messages) && existing.messages.length > 0) {
+        const idExists = existing.messages.some((m: RawMessage) => m.message_id === msgId)
+        if (idExists) {
+          return {
+            success: true,
+            conversationId,
+            userMessageId: msgId,
+            isDuplicate: true,
+          }
+        }
+
+        const lastMsg = existing.messages[existing.messages.length - 1]
+        if (
+          lastMsg &&
+          lastMsg.role === 'user' &&
+          lastMsg.raw_content === rawVisitorMessage
+        ) {
+          const timeDiff = Math.abs(new Date(nowIso).getTime() - new Date(lastMsg.created_at).getTime())
+          if (timeDiff < 5000) {
+            return {
+              success: true,
+              conversationId,
+              userMessageId: lastMsg.message_id,
+              isDuplicate: true,
+            }
+          }
+        }
+      }
+
+      // Append user message to existing conversation
+      const updateDoc: Record<string, unknown> = {
+        $push: {
+          messages: userMessage,
+        },
+        $set: {
+          updated_at: nowIso,
+          visitor_message: rawVisitorMessage,
+          timestamp: nowIso,
+          processed: false,
+          processing_status: 'pending',
+        },
+      }
+
+      // Set title if existing has generic title
+      if (!existing.title || existing.title === 'New Conversation' || existing.title === 'General Conversation') {
+        const title = await generateConversationTitle(rawVisitorMessage)
+        if (title && title !== 'New Conversation') {
+          ;(updateDoc.$set as Record<string, unknown>).title = title
+        }
+      }
+
+      await convColl.updateOne({ _id: existing._id }, updateDoc)
+
+      return {
+        success: true,
+        conversationId,
+        userMessageId: msgId,
+      }
+    })
+  } catch (err) {
+    console.error('[RawConversationMemory] Failed to record user message:', err)
+    return {
+      success: false,
+      conversationId,
+      userMessageId: msgId,
+      error: err instanceof Error ? err.message : String(err),
+    }
+  }
+}
+
+export interface RecordAiResponseParams {
+  conversationId: string
+  rawAiResponse: string
+  model?: string
+  messageId?: string
+  status?: 'completed' | 'failed' | 'error'
+  errorMessage?: string
+}
+
+export interface RecordAiResponseResult {
+  success: boolean
+  conversationId: string
+  assistantMessageId: string
+  error?: string
+}
+
+/**
+ * Persists the AI response (or failure status) associated with the conversation.
+ */
+export async function recordAiResponse(
+  params: RecordAiResponseParams,
+): Promise<RecordAiResponseResult> {
+  const { conversationId, rawAiResponse, model, messageId, status = 'completed', errorMessage } = params
+
+  const msgId = messageId && messageId.trim() ? messageId.trim() : generateMessageId()
+  const nowIso = new Date().toISOString()
+  const isFailure = status === 'failed' || status === 'error'
+
+  const contentToStore = isFailure && (!rawAiResponse || !rawAiResponse.trim())
+    ? '[AI response generation failed]'
+    : rawAiResponse
+
+  try {
+    return await withMongoRetry(async () => {
+      const db = await getDatabase()
+      if (!db) {
+        console.error('[RawConversationMemory] Database connection unavailable during recordAiResponse')
+        return {
+          success: false,
+          conversationId,
+          assistantMessageId: msgId,
+          error: 'Database unavailable',
+        }
+      }
+
+      const convColl = db.collection('conversations')
+
+      const assistantMessage: RawMessage = {
+        message_id: msgId,
+        conversation_id: conversationId,
+        role: 'assistant',
+        raw_content: contentToStore, // 100% UNTOUCHED
+        created_at: nowIso,
+      }
+
+      const existing = await convColl.findOne({
+        $or: [{ conversation_id: conversationId }, { session_id: conversationId }],
+      })
+
+      if (!existing) {
+        // Fallback: If conversation document was missing, create it
+        await convColl.insertOne({
+          conversation_id: conversationId,
+          session_id: conversationId,
+          visitor_id: 'unknown-visitor',
+          title: 'AI Conversation',
+          created_at: nowIso,
+          updated_at: nowIso,
+          messages: [assistantMessage],
+          visitor_message: '',
+          ai_response: contentToStore,
+          timestamp: nowIso,
+          processed: false,
+          processing_status: isFailure ? 'failed' : 'pending',
+          ...(isFailure ? { processing_error: errorMessage || 'AI failed to generate response' } : {}),
+          metadata: {
+            model: model || 'unknown',
+            source: 'nextjs-serverless',
+          },
+        })
+
+        return {
+          success: true,
+          conversationId,
+          assistantMessageId: msgId,
+        }
+      }
+
+      // Check if message ID was already appended
+      if (Array.isArray(existing.messages) && existing.messages.some((m: RawMessage) => m.message_id === msgId)) {
+        return {
+          success: true,
+          conversationId,
+          assistantMessageId: msgId,
+        }
+      }
+
+      const updateDoc: Record<string, unknown> = {
+        $push: {
+          messages: assistantMessage,
+        },
+        $set: {
+          updated_at: nowIso,
+          ai_response: contentToStore,
+          timestamp: nowIso,
+          processed: false,
+          processing_status: isFailure ? 'failed' : 'pending',
+          ...(isFailure ? { processing_error: errorMessage || 'AI failed to generate response' } : {}),
+          ...(model ? { 'metadata.model': model } : {}),
+        },
+      }
+
+      // If conversation title is missing or generic, attempt title improvement with response
+      if (
+        (!existing.title || existing.title === 'New Conversation' || existing.title === 'General Conversation') &&
+        existing.visitor_message &&
+        !isFailure
+      ) {
+        const newTitle = await generateConversationTitle(existing.visitor_message, contentToStore)
+        if (newTitle && newTitle !== 'New Conversation') {
+          ;(updateDoc.$set as Record<string, unknown>).title = newTitle
+        }
+      }
+
+      await convColl.updateOne({ _id: existing._id }, updateDoc)
+
+      return {
+        success: true,
+        conversationId,
+        assistantMessageId: msgId,
+      }
+    })
+  } catch (err) {
+    console.error('[RawConversationMemory] Failed to record AI response:', err)
+    return {
+      success: false,
+      conversationId,
+      assistantMessageId: msgId,
+      error: err instanceof Error ? err.message : String(err),
+    }
+  }
+}
+
+/**
+ * Retrieves the complete stored conversation record for a given session.
+ * Used for maintaining continuity when a user refreshes or reopens a conversation.
+ */
+export async function getConversationBySessionId(sessionId: string): Promise<ConversationRecord | null> {
+  if (!sessionId || typeof sessionId !== 'string') return null
+
+  try {
+    const db = await getDatabase()
+    if (!db) return null
+
+    const convColl = db.collection('conversations')
+    const doc = await convColl.findOne({
+      $or: [{ conversation_id: sessionId }, { session_id: sessionId }],
+    })
+
+    if (!doc) return null
+    return mapDocToConversationRecord(doc)
+  } catch (err) {
+    console.error('[RawConversationMemory] Failed to retrieve conversation by session ID:', err)
+    return null
+  }
+}
+
+/**
+ * Backward compatibility wrapper that records both user message and AI response together.
  */
 export async function saveRawConversationMessage(params: {
   visitorId: string
@@ -287,85 +626,16 @@ export async function saveRawConversationMessage(params: {
 }): Promise<void> {
   const { visitorId, conversationId, rawVisitorMessage, rawAiResponse, model } = params
 
-  try {
-    const db = await getDatabase()
-    if (!db) return
+  await recordUserMessage({
+    visitorId,
+    conversationId,
+    rawVisitorMessage,
+  })
 
-    const nowIso = new Date().toISOString()
-    const convColl = db.collection('conversations')
-
-    const userMessage: RawMessage = {
-      message_id: generateMessageId(),
-      conversation_id: conversationId,
-      role: 'user',
-      raw_content: rawVisitorMessage, // 100% UNTOUCHED
-      created_at: nowIso,
-    }
-
-    const assistantMessage: RawMessage = {
-      message_id: generateMessageId(),
-      conversation_id: conversationId,
-      role: 'assistant',
-      raw_content: rawAiResponse, // 100% UNTOUCHED
-      created_at: nowIso,
-    }
-
-    // Check if conversation record already exists for this session
-    const existing = await convColl.findOne({
-      $or: [{ conversation_id: conversationId }, { session_id: conversationId }],
-    })
-
-    if (!existing) {
-      // Clean only the title for the new conversation
-      const title = await generateConversationTitle(rawVisitorMessage, rawAiResponse)
-
-      await convColl.insertOne({
-        conversation_id: conversationId,
-        session_id: conversationId,
-        visitor_id: visitorId,
-        title,
-        created_at: nowIso,
-        updated_at: nowIso,
-        messages: [userMessage, assistantMessage],
-        // Legacy & compatibility fields:
-        visitor_message: rawVisitorMessage,
-        ai_response: rawAiResponse,
-        timestamp: nowIso,
-        processed: false,
-        processing_status: 'pending',
-        metadata: {
-          model,
-          source: 'nextjs-serverless',
-        },
-      })
-    } else {
-      // Append raw messages to existing conversation document
-      const updateDoc: Record<string, unknown> = {
-        $push: {
-          messages: { $each: [userMessage, assistantMessage] },
-        },
-        $set: {
-          updated_at: nowIso,
-          visitor_message: rawVisitorMessage,
-          ai_response: rawAiResponse,
-          timestamp: nowIso,
-          processed: false,
-          processing_status: 'pending',
-        },
-      }
-
-      // If existing conversation lacks a title, generate one
-      if (!existing.title || existing.title === 'New Conversation' || existing.title === 'General Conversation') {
-        const newTitle = await generateConversationTitle(rawVisitorMessage, rawAiResponse)
-        ;(updateDoc.$set as Record<string, unknown>).title = newTitle
-      }
-
-      await convColl.updateOne(
-        { _id: existing._id },
-        updateDoc,
-      )
-    }
-  } catch (err) {
-    console.warn('[RawConversationMemory] Background raw conversation save failed:', err)
-  }
+  await recordAiResponse({
+    conversationId,
+    rawAiResponse,
+    model,
+    status: 'completed',
+  })
 }

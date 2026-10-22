@@ -22,6 +22,8 @@ import {
 } from '@/lib/security'
 
 import {
+  recordUserMessage,
+  recordAiResponse,
   saveRawConversationMessage,
   getRelevantPreviousConversations,
   formatRelevantConversationsForPrompt,
@@ -128,20 +130,31 @@ export async function POST(request: Request) {
       typeof lastRawItem?.content === 'string'
         ? lastRawItem.content
         : String(lastRawItem?.content || '')
+    const userMessageId = typeof lastRawItem?.id === 'string' ? lastRawItem.id : undefined
 
     const lastMessage = validatedMessages[validatedMessages.length - 1].content
+
+    // EARLY PERSISTENCE: Save user message immediately to MongoDB upon receipt
+    // This ensures no user message is ever lost, regardless of subsequent AI status
+    const userPersistResult = await recordUserMessage({
+      visitorId,
+      conversationId: sessionId,
+      rawVisitorMessage,
+      messageId: userMessageId,
+    })
+
+    if (!userPersistResult.success) {
+      console.error('[ChatAPI] User message persistence error:', userPersistResult.error)
+    }
 
     // Easter Egg: If visitor mentions "Cha" or "charizh" (case-insensitive)
     if (/\b(cha|charizh)\b/i.test(lastMessage)) {
       const easterEggText = 'whoops,  what are you trying to breakin'
-      saveRawConversationMessage({
-        visitorId,
+      await recordAiResponse({
         conversationId: sessionId,
-        rawVisitorMessage,
         rawAiResponse: easterEggText,
         model: 'easter-egg-rule',
-      }).catch((err) => {
-        console.warn('[MongoDB] Background easter egg log failed:', err)
+        status: 'completed',
       })
 
       return new Response(easterEggText, {
@@ -167,6 +180,28 @@ export async function POST(request: Request) {
         if (pyData.response && typeof pyData.response === 'string') {
           // 17. Trim API response string & sanitize model leaks
           const cleanOutput = sanitizeAiOutput(pyData.response.trim())
+
+          // Persist the AI response associated with this conversation
+          await recordAiResponse({
+            conversationId: sessionId,
+            rawAiResponse: cleanOutput,
+            model: 'python-flask-backend',
+            status: 'completed',
+          })
+
+          recordVisitorInteraction(visitorId, sessionId).catch(() => {})
+
+          if (!isTrivialMessage(rawVisitorMessage)) {
+            extractAndStoreVisitorMemories({
+              visitorId,
+              sessionId,
+              visitorMessage: rawVisitorMessage,
+              aiResponse: cleanOutput,
+            }).catch((err) => {
+              console.warn('[VisitorExtractor] Background extraction error:', err)
+            })
+          }
+
           return new Response(cleanOutput, {
             headers: { 'Content-Type': 'text/plain; charset=utf-8' },
           })
@@ -180,6 +215,13 @@ export async function POST(request: Request) {
     const apiKey = process.env.GEMINI_API_KEY
 
     if (!apiKey || apiKey === 'your_api_key_here' || apiKey.trim() === '') {
+      await recordAiResponse({
+        conversationId: sessionId,
+        rawAiResponse: '[AI chat service is temporarily unavailable.]',
+        status: 'failed',
+        errorMessage: 'GEMINI_API_KEY is not configured',
+      })
+
       return Response.json(
         trimApiResponse({ error: 'AI chat service is temporarily unavailable.' }),
         { status: 503 },
@@ -257,7 +299,7 @@ export async function POST(request: Request) {
 
     let response = null
     let usedModel = 'gemini-3.5-flash-lite'
-    let lastErr = null
+    let lastErr: unknown = null
 
     for (const model of candidateModels) {
       try {
@@ -279,6 +321,13 @@ export async function POST(request: Request) {
     }
 
     if (!response) {
+      await recordAiResponse({
+        conversationId: sessionId,
+        rawAiResponse: '[AI service temporarily unavailable]',
+        status: 'failed',
+        errorMessage: lastErr ? (lastErr instanceof Error ? lastErr.message : String(lastErr)) : 'All candidate models failed',
+      })
+
       return Response.json(
         trimApiResponse({ error: 'AI service temporarily unavailable. Please try again in a few moments.' }),
         { status: 503 },
@@ -304,15 +353,12 @@ export async function POST(request: Request) {
             const rawAiText = fullResponseText
             const cleanAiText = sanitizeAiOutput(fullResponseText.trim())
 
-            // 1. Preserve complete raw conversation (visitor's raw message and AI raw response)
-            saveRawConversationMessage({
-              visitorId,
+            // 1. Persist AI response
+            await recordAiResponse({
               conversationId: sessionId,
-              rawVisitorMessage,
               rawAiResponse: rawAiText,
               model: usedModel,
-            }).catch((err) => {
-              console.warn('[RawConversationMemory] Save conversation background error:', err)
+              status: 'completed',
             })
 
             // 2. Record visitor interaction metadata
@@ -331,6 +377,13 @@ export async function POST(request: Request) {
             }
           }
         } catch (err) {
+          await recordAiResponse({
+            conversationId: sessionId,
+            rawAiResponse: fullResponseText || '[AI stream interrupted]',
+            model: usedModel,
+            status: 'failed',
+            errorMessage: err instanceof Error ? err.message : String(err),
+          })
           controller.error(err)
         }
       },
@@ -342,7 +395,8 @@ export async function POST(request: Request) {
         'Transfer-Encoding': 'chunked',
       },
     })
-  } catch {
+  } catch (err) {
+    console.error('[ChatAPI] Unexpected error in chat route:', err)
     return Response.json(
       trimApiResponse({ error: 'An unexpected error occurred while processing your request.' }),
       { status: 500 },
