@@ -3,6 +3,7 @@ import { Hero } from '@/components/hero'
 import { About } from '@/components/about'
 import { Projects } from '@/components/projects'
 import { Skills } from '@/components/skills'
+import { Experience } from '@/components/experience'
 import { Credentials } from '@/components/credentials'
 import { Contact } from '@/components/contact'
 import { SiteFooter } from '@/components/site-footer'
@@ -19,6 +20,7 @@ export default function Page() {
         <About />
         <Projects />
         <Skills />
+        <Experience />
         <Credentials />
         <Contact />
       </main>

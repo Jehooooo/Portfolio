@@ -34,11 +34,10 @@ export function About() {
       id="about"
       className="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 md:py-24 relative"
     >
-      <div id="experience" className="absolute -top-24" />
       {/* Header section */}
       <div className="flex items-center justify-between">
         <p className="font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground/80">
-          EXPERIENCE
+          ABOUT
         </p>
         <span className="text-xs text-muted-foreground/60">
           Selected milestones
